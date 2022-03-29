@@ -151,14 +151,14 @@
         console.log(`'${e.latlng.lng}, ${e.latlng.lat}',`);
     });
 
-    let prevZoom = null;
+    let prevZoom = map.getZoom();
     map.addEventListener("zoomend", function () {
         // 根据缩放显示和隐藏文本
         var currZoom = this.getZoom();
         console.log(`currentZoom: ${currZoom}`);
-        if (currZoom > zoomToDisplayLabel && prevZoom <= zoomToDisplayLabel) {
+        if (currZoom >= zoomToDisplayLabel && prevZoom < zoomToDisplayLabel) {
             showHideMarkerLabel(true);
-        } else if (currZoom <= zoomToDisplayLabel && prevZoom > zoomToDisplayLabel) {
+        } else if (currZoom < zoomToDisplayLabel && prevZoom >= zoomToDisplayLabel) {
             showHideMarkerLabel(false);
         }
         prevZoom = currZoom;
