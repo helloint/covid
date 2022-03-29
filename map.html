@@ -152,14 +152,17 @@
     });
 
     let prevZoom = map.getZoom();
+    let isLabelDisplay = prevZoom >= zoomToDisplayLabel;
     map.addEventListener("zoomend", function () {
         // 根据缩放显示和隐藏文本
         var currZoom = this.getZoom();
         console.log(`currentZoom: ${currZoom}`);
         if (currZoom >= zoomToDisplayLabel && prevZoom < zoomToDisplayLabel) {
-            showHideMarkerLabel(true);
+            isLabelDisplay = true;
+            showHideMarkerLabel(isLabelDisplay);
         } else if (currZoom < zoomToDisplayLabel && prevZoom >= zoomToDisplayLabel) {
-            showHideMarkerLabel(false);
+            isLabelDisplay = false;
+            showHideMarkerLabel(isLabelDisplay);
         }
         prevZoom = currZoom;
     });
@@ -282,6 +285,7 @@
                         new BMapGL.Size(15, 15)
                     ));
                     var label = new BMapGL.Label(address, {offset: new BMapGL.Size(address.length * -5,-35)});
+                    !isLabelDisplay && label.hide();
                     marker.setLabel(label);
                     map.addOverlay(marker);
                 }
@@ -340,6 +344,7 @@
             ));
             var label = new BMapGL.Label(pois[0].title, {offset: new BMapGL.Size(pois[0].title.length * -5,-35)});
             label.setStyle({border: 0});
+            !isLabelDisplay && label.hide();
             marker.setLabel(label);
             marker.disableMassClear();
             map.addOverlay(marker);
