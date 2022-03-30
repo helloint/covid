@@ -136,7 +136,7 @@ async function getAddressFromWechat(url) {
     const match = title.match('(\\d+)月(\\d+)日（0-24时）');
     if (!match) {
         console.log('文章不匹配， exit。');
-        return false;
+        return null;
     }
 
     const month = parseInt(match[1], 10);
@@ -185,7 +185,9 @@ async function getAddressFromWechat(url) {
 
 const url = process.argv.slice(2)[0];
 getAddressFromWechat(url).then(result => {
-    fs.writeFileSync(`${__dirname}/data/${result.date}.json`, JSON.stringify(result.addresses), 'utf8');
+    if (result) {
+        fs.writeFileSync(`${__dirname}/data/${result.date}.json`, JSON.stringify(result.addresses), 'utf8');
+    }
 });
 
 // const dom = new JSDOM(`
