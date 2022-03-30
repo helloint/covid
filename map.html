@@ -89,9 +89,10 @@
         </script>
     </select>
     <div class="row">
-<!--        TODO: use lock/unlock icon-->
-        <input type="checkbox" class="data-input" value="Dogs" id="keepData">
-        <label class="text" for="keepData">保持</label>
+        <input type="checkbox" class="data-input" id="showEstateBoundary">
+        <label class="text" for="showEstateBoundary">小区</label>
+        <input type="checkbox" class="data-input" id="keepData">
+        <label class="text" for="keepData">保留</label>
         <img id="stopBtn" class="control-btn" src="images/stop.svg" />
         <img id="playBtn" class="control-btn" src="images/play.svg" />
     </div>
@@ -156,7 +157,7 @@
     const defaultLabelStyle = {textAlign: 'center'};
     const unblockLabelStyle = {border: 0, textAlign: 'center', background: 'transparent'};
     const regionPolygonOptions = {strokeWeight: 1, fillColor: 'blue', fillOpacity: 0.05};
-    const estatePolygonOptions = {strokeColor:"blue", strokeWeight:2, strokeOpacity:0.5};
+    const estatePolygonOptions = {strokeColor:"blue", strokeWeight:1, strokeOpacity:0.5};
 
     const map = new BMapGL.Map('container');
     const mapGeo = new BMapGL.Geocoder();
@@ -192,6 +193,9 @@
         !$(this).is(':checked') && map.clearOverlays();
         setHashParameter('keep', $(this).is(':checked') ? 1 : 0);
     });
+    $('#showEstateBoundary').change(function (e) {
+        setHashParameter('estate', $(this).is(':checked') ? 1 : 0);
+    });
     $('#showEstates').click(function (e) {
         // 画小区区域图
         estateNames.forEach((name) => {
@@ -205,7 +209,7 @@
 
     $(()=>{
         // 画街道底图
-        drawRegion(mhgmPoints);
+        renderTownBoundary(mhgmPoints);
 
         renderUI();
         fsm.init();
@@ -295,7 +299,7 @@
         // addresses.forEach(renderAddress);
         // 根据点, 获取小区, 如果有小区数据, 优先画小区, 否则降级到点
         addresses.forEach((address) => {
-            drawEstate(address);
+            renderEstate(address);
         });
         document.getElementById('pageTitle').innerText = date;
     }
@@ -314,7 +318,7 @@
     }
 
     // 根据小区名绘制label+边界
-    function drawEstate(name, isUnblocked = false) {
+    function renderEstate(name, isUnblocked = false) {
         getEstateInfo(name, function({points, title, point}) {
             let labelTitle = name;
             const labelOffset = [labelTitle.length * -5,-35];
@@ -324,7 +328,8 @@
                 labelTitle = title;
                 labelOffset[0] = labelTitle.length * -6;
                 // labelOffset[1] = -44;
-                isUnblocked && drawEstateRegion(points);
+
+                (isUnblocked || $('#showEstateBoundary').is(':checked')) && renderEstateBoundary(points, isUnblocked);
             } else {
                 title && console.log(`points of '${name}' not found`);
             }
@@ -392,7 +397,7 @@
                 }
 
                 // 清除地图上强制绘出的结果点位. 没找到其他方法可以做到
-                // FIXME: 这个API会抛个异常
+                // FIXME: 这个API会抛个异常 VM1155:1 Uncaught TypeError: Cannot read properties of undefined (reading 'center')
                 local.clearResults();
             });
             local.search(name);
@@ -402,16 +407,16 @@
     }
 
     // 绘制行政边界图
-    function drawRegion(points) {
+    function renderTownBoundary(points) {
         var polygon = new BMapGL.Polygon([points.join(';')], regionPolygonOptions);
         // avoid being cleared after `map.clearOverlays()` https://www.jb51.net/article/133766.htm
         polygon.disableMassClear();
         map.addOverlay(polygon);
     }
 
-    function drawEstateRegion(points) {
+    function renderEstateBoundary(points, keepOverlay) {
         var polygon = new BMapGL.Polygon([points.join(';')], estatePolygonOptions);  //创建多边形
-        polygon.disableMassClear();
+        keepOverlay && polygon.disableMassClear();
         map.addOverlay(polygon);
     }
 
@@ -431,7 +436,7 @@
         });
     }
 
-    // ------------------------ Utils ------------------------
+    // ------------------------ BMap Utils ------------------------
     /**
      * 把地址转换成latlng坐标
      * 调用了百度地图API实现的, 然后另外增加了一层缓存, 否则会影响画点的渲染速度
