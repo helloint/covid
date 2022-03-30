@@ -142,6 +142,15 @@
     // 针对百度上的小区地址和实际地址不符的, 设置映射关系予以纠正
     const estateAliasMap = {
         '闵行区古美西路752弄': '闵行区古美西路752号',
+        '闵行区古龙路287弄': '新时代景庭',
+        '闵行区虹梅路999弄': '华梅花苑',
+        '闵行区虹莘路2288弄': '莲花新城',
+        '闵行区虹莘路2448弄': '合成公寓',
+        '闵行区龙茗路1458弄': '蓝色港湾',
+        // '闵行区东兰路307号': '平南一二村',  // TODO: 为什么会有重复render?
+        '闵行区古龙路1065弄': '新时代富嘉花园',
+        '闵行区漕宝路1508弄': '东兰新村',
+
     };
     // 第一，二批解封小区
     const names1 = ["成亿家园","古美公寓","金领华庭","和嘉公寓","万源城御溪","华梅花苑","春意苑","古美三村","同济华城(一期)","融创同济玫瑰公馆"];
@@ -190,10 +199,12 @@
         setHashParameter('date', e.target.value);
     });
     $('#keepData').change(function (e) {
+        // FIXME: handle deeplink
         !$(this).is(':checked') && map.clearOverlays();
         setHashParameter('keep', $(this).is(':checked') ? 1 : 0);
     });
     $('#showEstateBoundary').change(function (e) {
+        // FIXME: handle deeplink
         setHashParameter('estate', $(this).is(':checked') ? 1 : 0);
     });
     $('#showEstates').click(function (e) {
@@ -330,8 +341,6 @@
                 // labelOffset[1] = -44;
 
                 (isUnblocked || $('#showEstateBoundary').is(':checked')) && renderEstateBoundary(points, isUnblocked);
-            } else {
-                title && console.log(`points of '${name}' not found`);
             }
 
             var marker = new BMapGL.Marker(point);
@@ -345,7 +354,7 @@
         });
     }
 
-    function getEstateInfo(name, callback) {
+    function getEstateInfo(originName, callback) {
         /*
         优先取小区数据. 'tags'包含 ['小区/楼盘'] 的就是小区, 一般都会有边界数据. 但要过滤掉末尾是'X门'的结果
         双相匹配：
@@ -356,9 +365,10 @@
         春江景庐/闵行区古美西路752弄->闵行区古美西路752弄
         2. 需要设置别名
         君莲小区e块->君莲幸福苑
-        3. 需要扩大搜索结果数量10->20
+        3. 需要扩大搜索结果数量到: 50
+        '浦东新区崂山路645弄'-> '潍坊十村二小区' 45
          */
-        name = estateAliasMap[name] || name;
+        const name = estateAliasMap[originName] || originName;
         if (estateCache.get(name) === undefined) {
             const local = new BMapGL.LocalSearch(map, {
                 // Doc: https://mapopen-pub-jsapi.bj.bcebos.com/jsapi/reference/jsapi_webgl_1_0.html#a8b3
@@ -366,41 +376,50 @@
                     map: map,
                     autoViewport: false,    // 关闭自动聚焦定位到搜索结果
                 },
-                pageCapacity: 100,
+                pageCapacity: 50,
             });
             local.setMarkersSetCallback(function(pois){
                 if (pois && pois.length > 0) {
-                    var poi = pois.find((poi) => !poi.title.endsWith('门') && poi.tags && poi.tags.includes('小区/楼盘'));
+                    // '批发市场/集市' 浦东新区高青路960号 新联丰农贸市场
+                    // '宾馆', '旅店' 浦东新区康桥路1200号 '聚沁园时尚宾馆'
+                    // '村庄' 浦东新区东风村
+                    var poi = pois.find((poi) => !poi.title.endsWith('门') && poi.tags
+                        && (poi.tags.includes('小区/楼盘') || poi.tags.includes('宾馆')
+                            || poi.tags.includes('村庄') || poi.tags.includes('批发市场/集市')));
                     if (!poi) poi = pois[0];
-
+                    var resultIndex = pois.indexOf(poi);
                     //根据uid尝试获取边界信息
                     getPointsByUid(poi.uid, (points) => {
                         const data = {
                             points, title: poi.title, point: poi.point,
                         };
                         callback(data);
+                        // console.log(`pageCapacity: ${resultIndex}, name: ${name}, title: ${poi.title}`);
                         if (points) {
+                            // console.log(`points found, name: ${name}, uid: ${poi.uid}`);
                             // TODO: think about merge the 2 cache data
                             estateCache.set(name, data);
                         } else {
-                            console.log(`points of '${name}' not found, uid: ${poi.uid}`);
+                            console.log(`points not found, name: ${name}, uid: ${poi.uid}`);
                             // TODO: maybe better to use data from getPoint()
                             estateCache.set(name, {name, point: poi.point});
                         }
                     });
                 } else {
-                    console.log(`no poi results, name: ${name}`);
+                    console.log(`poi not found, name: ${name}`);
                     getPoint(name, function(point) {
                         callback({point});
                         estateCache.set(name, {name, point});
                     });
                 }
 
-                // 清除地图上强制绘出的结果点位. 没找到其他方法可以做到
-                // FIXME: 这个API会抛个异常 VM1155:1 Uncaught TypeError: Cannot read properties of undefined (reading 'center')
-                local.clearResults();
+                // 同步执行的话, 这个API会抛个exception, 所以异步执行
+                setTimeout(()=>{
+                    // 清除地图上强制绘出的结果点位. 没找到其他方法可以做到
+                    local.clearResults();
+                });
             });
-            local.search(name);
+            local.search(name, {forceLocal: true});
         } else {
             callback(estateCache.get(name));
         }
