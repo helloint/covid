@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/javascript-state-machine@3.1.0/lib/state-machine.min.js"></script>
     <script type="text/javascript" src="https://api.map.baidu.com/api?type=webgl&v=1.0&ak=FOghoenHAy69lWj3HgkVW5kz4IRgbQSi"></script>
     <script type="text/javascript" src="data/cache.js"></script>
+    <script type="text/javascript" src="data/estateCache.js"></script>
     <title>上海疫情地图</title>
     <style>
         body,html {width: 100%; height: 100%; padding: 0; margin: 0;}
@@ -91,8 +92,8 @@
 <!--        TODO: use lock/unlock icon-->
         <input type="checkbox" class="data-input" value="Dogs" id="keepData">
         <label class="text" for="keepData">保持</label>
-        <img id="stopBtn" class="control-btn" src="stop.svg" />
-        <img id="playBtn" class="control-btn" src="play.svg" />
+        <img id="stopBtn" class="control-btn" src="images/stop.svg" />
+        <img id="playBtn" class="control-btn" src="images/play.svg" />
     </div>
 </div>
 <div class="view-controller bottom-left">
@@ -137,11 +138,25 @@
         '121.39004441689426, 31.136567171561197',
         '121.3925678137649, 31.131997264593217',
     ];
+    // 针对百度上的小区地址和实际地址不符的, 设置映射关系予以纠正
+    const estateAliasMap = {
+        '闵行区古美西路752弄': '闵行区古美西路752号',
+    };
     // 第一，二批解封小区
     const names1 = ["成亿家园","古美公寓","金领华庭","和嘉公寓","万源城御溪","华梅花苑","春意苑","古美三村","同济华城(一期)","融创同济玫瑰公馆"];
     const names2 = ["馨古美佳苑（公租房）","东兰路37弄小区","梅莲苑","万源城逸郡","华城花苑","合成、龙茗公寓","龙祥嘉园","平阳苑","仲义苑","春江锦庐","万源城一期","古美十村","阳光美景城-东区","东苑怡景园","万源城御境","九星苑","平阳三村","古美一村"];
     const names3 = ["江南星城-纯翠江南","东苑半岛花园","金汇豪庭","东兰雅苑","欧风花都","阳光美景城(西区)","新时代景庭","东方御花园-北区","平阳四街坊","万源城朗郡","中友嘉园","东苑古龙城","康健丽都","古龙苑","古美四村"];
     const estateNames = [...names1, ...names2, ...names3];
+    const covidIcon = new BMapGL.Icon('images/covid.svg',
+        new BMapGL.Size(15, 15)
+    );
+    const unblockIcon = new BMapGL.Icon('images/smile.png',
+        new BMapGL.Size(15, 15)
+    )
+    const defaultLabelStyle = {textAlign: 'center'};
+    const unblockLabelStyle = {border: 0, textAlign: 'center', background: 'transparent'};
+    const regionPolygonOptions = {strokeWeight: 1, fillColor: 'blue', fillOpacity: 0.05};
+    const estatePolygonOptions = {strokeColor:"blue", strokeWeight:2, strokeOpacity:0.5};
 
     const map = new BMapGL.Map('container');
     const mapGeo = new BMapGL.Geocoder();
@@ -179,7 +194,11 @@
     });
     $('#showEstates').click(function (e) {
         // 画小区区域图
-        drawEstate(estateNames);
+        estateNames.forEach((name) => {
+            drawEstate(name, true);
+        })
+
+        // FIXME: can't delete the overlay, so make it one-time action
         $(this).hide();
     });
 
@@ -266,33 +285,153 @@
             currentDate = parseDate(d);
         }
         fetchData(currentDate, function(data) {
-            renderData(currentDate, data);
+            renderAddresses(currentDate, data);
         });
     }
 
-    function renderData(date, data) {
-        drawPoints(data);
+    function renderAddresses(date, addresses) {
+        !$('#keepData').is(':checked') && map.clearOverlays();
+        // 直接画点
+        // addresses.forEach(renderAddress);
+        // 根据点, 获取小区, 如果有小区数据, 优先画小区, 否则降级到点
+        addresses.forEach((address) => {
+            drawEstate(address);
+        });
         document.getElementById('pageTitle').innerText = date;
     }
 
-    function drawPoints(addresses) {
-        !$('#keepData').is(':checked') && map.clearOverlays();
-        addresses.forEach((address) => {
-            getPoint(address, function(point) {
-                if (point) {
-                    var marker = new BMapGL.Marker(new BMapGL.Point(point.lng, point.lat));
-                    marker.setIcon(new BMapGL.Icon('icon.svg',
-                        new BMapGL.Size(15, 15)
-                    ));
-                    var label = new BMapGL.Label(address, {offset: new BMapGL.Size(address.length * -5,-35)});
-                    !isLabelDisplay && label.hide();
-                    marker.setLabel(label);
-                    map.addOverlay(marker);
-                }
-            });
+    function renderAddress(address) {
+        getPoint(address, function(point) {
+            if (point) {
+                var marker = new BMapGL.Marker(new BMapGL.Point(point.lng, point.lat));
+                marker.setIcon(covidIcon);
+                var label = new BMapGL.Label(address, {offset: new BMapGL.Size(address.length * -5,-35)});
+                !isLabelDisplay && label.hide();
+                marker.setLabel(label);
+                map.addOverlay(marker);
+            }
         });
     }
 
+    // 根据小区名绘制label+边界
+    function drawEstate(name, isUnblocked = false) {
+        getEstateInfo(name, function({points, title, point}) {
+            let labelTitle = name;
+            const labelOffset = [labelTitle.length * -5,-35];
+            // 能取到就是小区, 否则降级画点
+            if (points) {
+                // labelTitle = title + '<br>' + labelTitle;
+                labelTitle = title;
+                labelOffset[0] = labelTitle.length * -6;
+                // labelOffset[1] = -44;
+                isUnblocked && drawEstateRegion(points);
+            } else {
+                title && console.log(`points of '${name}' not found`);
+            }
+
+            var marker = new BMapGL.Marker(point);
+            isUnblocked ? marker.setIcon(unblockIcon) : marker.setIcon(covidIcon);
+            var label = new BMapGL.Label(labelTitle, {offset: new BMapGL.Size(...labelOffset)});
+            label.setStyle(isUnblocked ? unblockLabelStyle : defaultLabelStyle);
+            !isLabelDisplay && label.hide();
+            marker.setLabel(label);
+            isUnblocked && marker.disableMassClear();
+            map.addOverlay(marker);
+        });
+    }
+
+    function getEstateInfo(name, callback) {
+        /*
+        优先取小区数据. 'tags'包含 ['小区/楼盘'] 的就是小区, 一般都会有边界数据. 但要过滤掉末尾是'X门'的结果
+        双相匹配：
+        鸿发家园/闵行区古美西路899弄/dffd631c1dd32ebd38221c1c
+        春意苑/闵行区虹莘路1518弄28支弄/6d9bafcdb9a874cd715e8084
+        不匹配：
+        1. 需要把'弄'改成'号'
+        春江景庐/闵行区古美西路752弄->闵行区古美西路752弄
+        2. 需要设置别名
+        君莲小区e块->君莲幸福苑
+        3. 需要扩大搜索结果数量10->20
+         */
+        name = estateAliasMap[name] || name;
+        if (estateCache.get(name) === undefined) {
+            const local = new BMapGL.LocalSearch(map, {
+                // Doc: https://mapopen-pub-jsapi.bj.bcebos.com/jsapi/reference/jsapi_webgl_1_0.html#a8b3
+                renderOptions:{
+                    map: map,
+                    autoViewport: false,    // 关闭自动聚焦定位到搜索结果
+                },
+                pageCapacity: 100,
+            });
+            local.setMarkersSetCallback(function(pois){
+                if (pois && pois.length > 0) {
+                    var poi = pois.find((poi) => !poi.title.endsWith('门') && poi.tags && poi.tags.includes('小区/楼盘'));
+                    if (!poi) poi = pois[0];
+
+                    //根据uid尝试获取边界信息
+                    getPointsByUid(poi.uid, (points) => {
+                        const data = {
+                            points, title: poi.title, point: poi.point,
+                        };
+                        callback(data);
+                        if (points) {
+                            // TODO: think about merge the 2 cache data
+                            estateCache.set(name, data);
+                        } else {
+                            console.log(`points of '${name}' not found, uid: ${poi.uid}`);
+                            // TODO: maybe better to use data from getPoint()
+                            estateCache.set(name, {name, point: poi.point});
+                        }
+                    });
+                } else {
+                    console.log(`no poi results, name: ${name}`);
+                    getPoint(name, function(point) {
+                        callback({point});
+                        estateCache.set(name, {name, point});
+                    });
+                }
+
+                // 清除地图上强制绘出的结果点位. 没找到其他方法可以做到
+                // FIXME: 这个API会抛个异常
+                local.clearResults();
+            });
+            local.search(name);
+        } else {
+            callback(estateCache.get(name));
+        }
+    }
+
+    // 绘制行政边界图
+    function drawRegion(points) {
+        var polygon = new BMapGL.Polygon([points.join(';')], regionPolygonOptions);
+        // avoid being cleared after `map.clearOverlays()` https://www.jb51.net/article/133766.htm
+        polygon.disableMassClear();
+        map.addOverlay(polygon);
+    }
+
+    function drawEstateRegion(points) {
+        var polygon = new BMapGL.Polygon([points.join(';')], estatePolygonOptions);  //创建多边形
+        polygon.disableMassClear();
+        map.addOverlay(polygon);
+    }
+
+    function showHideMarkerLabel(show) {
+        var allOverlay = map.getOverlays();
+        allOverlay.forEach(overlay => {
+            if (overlay instanceof BMapGL.Marker) {
+                var currLabel = overlay.getLabel();
+                if (currLabel) {
+                    if (show) {
+                        currLabel.show();
+                    } else {
+                        currLabel.hide();
+                    }
+                }
+            }
+        });
+    }
+
+    // ------------------------ Utils ------------------------
     /**
      * 把地址转换成latlng坐标
      * 调用了百度地图API实现的, 然后另外增加了一层缓存, 否则会影响画点的渲染速度
@@ -303,7 +442,7 @@
         if (pointCache.has(address)) {
             callback(pointCache.get(address));
         } else {
-            mapGeo.getPoint(address, (point)=>{
+            mapGeo.getPoint(address, (point) => {
                 pointCache.set(address, point);
                 callback(point);
             }, "上海市");
@@ -316,84 +455,29 @@
             .then(json => callback(json));
     }
 
-    // 绘制行政边界图
-    function drawRegion(points) {
-        var polygon = new BMapGL.Polygon([points.join(';')], {
-            strokeWeight: 1,
-            fillColor: 'blue',
-            fillOpacity: 0.05
-        });
-        // avoid being cleared after `map.clearOverlays()` https://www.jb51.net/article/133766.htm
-        polygon.disableMassClear();
-        map.addOverlay(polygon);
-    }
-
-    // 绘制小区边界图
-    function drawEstate(names){
-        const local = new BMapGL.LocalSearch(map, {
-            // Doc: https://mapopen-pub-jsapi.bj.bcebos.com/jsapi/reference/jsapi_webgl_1_0.html#a8b3
-            renderOptions:{
-                map: map,
-                autoViewport: false,    // 关闭自动聚焦定位到搜索结果
-            },
-        });
-        local.setMarkersSetCallback(function(pois){
-            var marker = new BMapGL.Marker(pois[0].point);
-            marker.setIcon(new BMapGL.Icon('smile.png',
-                new BMapGL.Size(15, 15)
-            ));
-            var label = new BMapGL.Label(pois[0].title, {offset: new BMapGL.Size(pois[0].title.length * -5,-35)});
-            label.setStyle({border: 0});
-            !isLabelDisplay && label.hide();
-            marker.setLabel(label);
-            marker.disableMassClear();
-            map.addOverlay(marker);
-
-            //根据获取到的poi id，查询边界坐标集合，画多边形
-            var uid = pois[0].uid;
-            queryUid(uid);
-
-            // FIXME: 这个API会抛个异常
-            local.clearResults();
-        });
-        names.forEach((info) => {
-            local.search(info);
-        })
-    }
-
-    // 获取小区信息
-    function queryUid(uid){
+    // 根据小区Uid获取小区边界
+    function getPointsByUid(uid, callback) {
         $.ajax({
             async: false,
-            url:"https://map.baidu.com/?pcevaname=pc4.1&qt=ext&ext_ver=new&l=12&uid="+uid,
-            dataType:'jsonp',
-            jsonp:'callback',
-            success:function(result) {
-                content = result.content;
-                if(null != content.geo){
-                    var geo = content.geo;
+            url: "https://map.baidu.com/?pcevaname=pc4.1&qt=ext&ext_ver=new&l=12&uid=" + uid,
+            dataType: 'jsonp',
+            jsonp: 'callback',
+            success: function (result) {
+                if (result.content.geo) {
+                    var geo = result.content.geo;
                     var points = coordinateToPoints(geo);
-                    //point分组，得到多边形的每一个点，画多边形
-                    if (points && points.indexOf(";") >= 0) {
-                        points = points.split(";");
-                    }
-                    var arr=[];
-                    for (var i=0;i<points.length-1;i++){
-                        var temp = points[i].split(",");
-                        arr.push(new BMapGL.Point(parseFloat(temp[0]),parseFloat(temp[1])));
-                    }
-                    var polygon = new BMapGL.Polygon(arr, {strokeColor:"blue", strokeWeight:2, strokeOpacity:0.5});  //创建多边形
-                    polygon.disableMassClear();
-                    map.addOverlay(polygon);   //增加多边形
+                    callback(points);
+                } else {
+                    callback(null);
                 }
             },
-            timeout:3000
+            timeout: 3000
         });
     }
 
-    // 提取百度米坐标字符串，转为经纬度坐标串
+    // 提取百度米坐标字符串，转为经纬度坐标数组
     function coordinateToPoints(coordinate) {
-        var points ="";
+        var points = [];
         if (coordinate) {
             if (coordinate && coordinate.indexOf("-") >= 0) {
                 coordinate = coordinate.split('-');
@@ -418,26 +502,10 @@
                 //var pos = coordinate[i].split(',');
                 var pos = temppoints[i];
                 var point = projection.pointToLngLat(new BMapGL.Pixel(pos.lng, pos.lat));
-                points += ([ point.lng, point.lat ].toString() + ";");
+                points.push([ point.lng, point.lat ].toString());
             }
         }
         return points;
-    }
-
-    function showHideMarkerLabel(show) {
-        var allOverlay = map.getOverlays();
-        allOverlay.forEach(overlay => {
-            if (overlay instanceof BMapGL.Marker) {
-                var currLabel = overlay.getLabel();
-                if (currLabel) {
-                    if (show) {
-                        currLabel.show();
-                    } else {
-                        currLabel.hide();
-                    }
-                }
-            }
-        });
     }
 </script>
 </body>
