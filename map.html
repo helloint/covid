@@ -16,16 +16,17 @@
         .center-top {position: fixed; top: 10px; left: 50%; transform: translate(-50%, 0);}
         .bottom-right {position: fixed; bottom: 10px; right: 10px;}
         .bottom-left {position: fixed; bottom: 10px; left: 10px;}
-        .page-title {z-index: 5; text-shadow: 2px 2px 4px #fff; border: 2px solid blue; border-radius: 4px; padding: 0px 4px;font-size: 20px; color: blue; background-color: #fff; }
+        .page-title {z-index: 5; text-shadow: 2px 2px 4px #fff; border: 2px solid blue; border-radius: 4px; padding: 0 4px; font-size: 20px; color: blue; background-color: #fff; }
         .date-controller {z-index: 5; display: flex; flex-flow: column-reverse nowrap;}
         .date-controller .row {display: flex; flex-flow: row nowrap; justify-content: flex-end; align-items: center;}
         .date-controller .text {font-size: 16px; color: blue; text-shadow: 2px 2px 4px #fff; margin-right: 5px;}
         .date-controller .data-input {}
+        /*TODO: make it beautify*/
         .date-controller .selector {font-size: 22px; color: blue;}
         .date-controller .control-btn {cursor: pointer; width: 30px; height: 30px; filter: invert(8%) sepia(100%) saturate(7356%) hue-rotate(248deg) brightness(99%) contrast(144%);}
         .date-controller #stopBtn {display: none;}
         .view-controller {z-index: 100; display: flex; flex-direction: row;}
-        .view-controller .data-btn {font-size: 22px; border-radius: 14px;}
+        .view-controller .selector {font-size: 22px; color: blue;}
     </style>
     <script>
         // Util Functions
@@ -72,6 +73,15 @@
             return `${yyyy}-${mm}-${dd}`;
         }
     </script>
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?fa2bf060727b6a09e723fd60722a3985";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
 </head>
 <body>
 <div id='container' class="map-container"></div>
@@ -98,7 +108,14 @@
     </div>
 </div>
 <div class="view-controller bottom-left">
-    <span><button id="showEstates" class="data-btn">卍</button></span>
+    <select id="districtSelector" class="selector row">
+        <script>
+            const districts = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
+            districts.forEach(item => {
+                document.write(`<option ${item === '闵行区' ? 'selected': ''}>${item}</option>`);
+            });
+        </script>
+    </select>
 </div>
 <script>
     const mapCenter = [121.40003152077978, 31.152492021564836];
@@ -150,13 +167,7 @@
         // '闵行区东兰路307号': '平南一二村',  // TODO: 为什么会有重复render?
         '闵行区古龙路1065弄': '新时代富嘉花园',
         '闵行区漕宝路1508弄': '东兰新村',
-
     };
-    // 第一，二批解封小区
-    const names1 = ["成亿家园","古美公寓","金领华庭","和嘉公寓","万源城御溪","华梅花苑","春意苑","古美三村","同济华城(一期)","融创同济玫瑰公馆"];
-    const names2 = ["馨古美佳苑（公租房）","东兰路37弄小区","梅莲苑","万源城逸郡","华城花苑","合成、龙茗公寓","龙祥嘉园","平阳苑","仲义苑","春江锦庐","万源城一期","古美十村","阳光美景城-东区","东苑怡景园","万源城御境","九星苑","平阳三村","古美一村"];
-    const names3 = ["江南星城-纯翠江南","东苑半岛花园","金汇豪庭","东兰雅苑","欧风花都","阳光美景城(西区)","新时代景庭","东方御花园-北区","平阳四街坊","万源城朗郡","中友嘉园","东苑古龙城","康健丽都","古龙苑","古美四村"];
-    const estateNames = [...names1, ...names2, ...names3];
     const covidIcon = new BMapGL.Icon('images/covid.svg',
         new BMapGL.Size(15, 15)
     );
@@ -165,12 +176,16 @@
     )
     const defaultLabelStyle = {textAlign: 'center'};
     const unblockLabelStyle = {border: 0, textAlign: 'center', background: 'transparent'};
+    const districtPolygonOptions = {strokeWeight: 1, fillColor: 'blue', fillOpacity: 0.02};
     const regionPolygonOptions = {strokeWeight: 1, fillColor: 'blue', fillOpacity: 0.05};
     const estatePolygonOptions = {strokeColor:"blue", strokeWeight:1, strokeOpacity:0.5};
 
     const map = new BMapGL.Map('container');
     const mapGeo = new BMapGL.Geocoder();
+    const mapBoundary = new BMapGL.Boundary();
     map.centerAndZoom(new BMapGL.Point(...mapCenter), mapZoom);
+    // FIXME: why animation doesn't work?
+    // map.setViewport({center: new BMapGL.Point(...mapCenter), zoom: mapZoom}, {enableAnimation: true});
     map.enableScrollWheelZoom(true);
     map.addEventListener('click', function (e) {
         console.log(`'${e.latlng.lng}, ${e.latlng.lat}',`);
@@ -207,16 +222,20 @@
         // FIXME: handle deeplink
         setHashParameter('estate', $(this).is(':checked') ? 1 : 0);
     });
-    $('#showEstates').click(function (e) {
-        // 画小区区域图
-        estateNames.forEach((name) => {
-            drawEstate(name, true);
-        })
-
-        // FIXME: can't delete the overlay, so make it one-time action
-        $(this).hide();
+    districts.forEach(item => {
+        mapBoundary.get(item, function(rs){
+            var ply = new BMapGL.Polygon(rs.boundaries, districtPolygonOptions); //建立多边形覆盖物
+            ply.disableMassClear();
+            map.addOverlay(ply);  //添加覆盖物
+        });
     });
-
+    $('#districtSelector').change(function (e) {
+        mapGeo.getPoint(e.target.value, function(point){
+            if (point) {
+                map.setCenter(point, {noAnimation: false});
+            }
+        }, "上海市");
+    });
 
     $(()=>{
         // 画街道底图
@@ -224,6 +243,13 @@
 
         renderUI();
         fsm.init();
+        renderLocationControl();
+        renderCopyright();
+
+        /*
+         TODO list
+         增加搜索框 https://lbsyun.baidu.com/jsdemo.htm#yCityLocation 搜索定位
+         */
     });
 
     /*
@@ -452,6 +478,32 @@
                     }
                 }
             }
+        });
+    }
+
+    function renderLocationControl() {
+        // 创建定位控件
+        var locationControl = new BMapGL.LocationControl({
+            // 控件的停靠位置（可选，默认左上角）
+            anchor: BMAP_ANCHOR_BOTTOM_LEFT,
+            // 控件基于停靠位置的偏移量（可选）
+            offset: new BMapGL.Size(10, 50)
+        });
+        // 将控件添加到地图上
+        map.addControl(locationControl);
+    }
+
+    function renderCopyright() {
+        var cr = new BMapGL.CopyrightControl({
+            anchor: BMAP_ANCHOR_TOP_RIGHT,
+            offset: new BMapGL.Size(10, 10)
+        });   //设置版权控件位置
+        map.addControl(cr); //添加版权控件
+        var bs = map.getBounds();   //返回地图可视区域
+        cr.addCopyright({
+            id: 1,
+            content: "<a href='https://github.com/helloint/covid' style='font-size:16px;color:#000; opacity: 0.5;'>@helloint</a>",
+            bounds: bs
         });
     }
 
