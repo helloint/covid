@@ -564,7 +564,7 @@
                     callback(null);
                 }
             },
-            timeout: 3000
+            timeout: 10000,
         });
     }
 
@@ -583,7 +583,7 @@
             //分割点，两个一组，组成百度米制坐标
             var temppoints=[];
             for(var i = 0, len = tempco.length; i < len; i++){
-                var obj = new Object();
+                var obj = {};
                 obj.lng=tempco[i];
                 obj.lat=tempco[i+1];
                 temppoints.push(obj);
@@ -592,7 +592,6 @@
             var projection = map.getProjection();
             //遍历米制坐标，转换为经纬度
             for ( var i = 0, len = temppoints.length; i < len; i++) {
-                //var pos = coordinate[i].split(',');
                 var pos = temppoints[i];
                 var point = projection.pointToLngLat(new BMapGL.Pixel(pos.lng, pos.lat));
                 points.push([ point.lng, point.lat ].toString());
