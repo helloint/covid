@@ -101,6 +101,14 @@
     <select id="districtSelector" class="selector row"></select>
 </div>
 <script>
+    /*
+    location cache data structure:
+    name (地址):
+        - point (原始点)
+        - points (边界信息)  这两个数据比较大，做异步加载。小cache，大cache，只有点显示小区，才加载大cache。
+        - title (小区名)
+     */
+
     const mapCenter = [121.40003152077978, 31.152492021564836];
     const mapZoom = 15;
     const zoomToDisplayLabel = 15;
