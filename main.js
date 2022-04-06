@@ -99,6 +99,7 @@ async function getAddressFromWechat(url) {
                 if (!address.trim() || address.startsWith('2022年') || address.startsWith('已对相关居住地落实终末消毒措施')) {
                     return true;
                 }
+                address = address.trim();
                 /*
                 Samples:
                 嘉定工业区陆渡村、草庵村、艾米公寓。
