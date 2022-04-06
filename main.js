@@ -89,34 +89,39 @@ async function getAddressFromWechat(url) {
     const date = `2022-${month < 10 ? '0' : ''}${month}-${day < 10 ? '0' : ''}${day}`;
     console.log(`date: ${date}`);
 
-    $('#js_content section[data-role=title]').each((index, item) => {
-        const areaName = $(item).find('section[data-brushtype="text"]').text();
-        // console.log(`areaName: ${areaName}`);
-        $(item).find('section section[data-autoskip="1"] p').each((index, addressItem) => {
-            let address = $(addressItem).find('span').text();
-            if (!address.trim() || address.startsWith('2022年') || address.startsWith('已对相关居住地落实终末消毒措施')) {
-                return true;
-            }
-            /*
-            Samples:
-            嘉定工业区陆渡村、草庵村、艾米公寓。
-            窑墩村，
-            周祝公路35号。
-             */
-            if (address.substr(-1) === '。' || address.substr(-1) === '，' || address.substr(-1) === '、') {
-                address = address.substring(0, address.length - 1);
-            }
+    let areaName = null;
+    $('#js_content section[data-role=title],#js_content section[data-id="72469"]').each((index, item) => {
+        if ($(item).attr('data-role') === 'title') {
+            areaName = $(item).find('section[data-brushtype="text"]').text();
+        } else if ($(item).attr('data-id') === '72469') {
+            $(item).find('section section[data-autoskip="1"] p').each((index, addressItem) => {
+                let address = $(addressItem).find('span').text();
+                if (!address.trim() || address.startsWith('2022年') || address.startsWith('已对相关居住地落实终末消毒措施')) {
+                    return true;
+                }
+                /*
+                Samples:
+                嘉定工业区陆渡村、草庵村、艾米公寓。
+                窑墩村，
+                周祝公路35号。
+                 */
+                if (address.substr(-1) === '。' || address.substr(-1) === '，' || address.substr(-1) === '、') {
+                    address = address.substring(0, address.length - 1);
+                }
 
-            let results = [];
-            if (address.indexOf('、') > -1) {
-                results = address.split('、');
-            } else {
-                results = [address];
-            }
-            results.forEach(item => {
-                addresses.push(`${areaName}${item}`);
+                let results = [];
+                if (address.indexOf('、') > -1) {
+                    results = address.split('、');
+                } else {
+                    results = [address];
+                }
+                results.forEach(item => {
+                    addresses.push(`${areaName}${item}`);
+                });
             });
-        });
+        } else {
+            console.log('something wrong!');
+        }
     });
 
     console.log(`addresses.length: ${addresses.length}`);
