@@ -103,10 +103,10 @@
 <script>
     /*
     location cache data structure:
-    name (地址):
+    address (地址):
         - point (原始点)
-        - points (边界信息)  这两个数据比较大，做异步加载。小cache，大cache，只有点显示小区，才加载大cache。
-        - title (小区名)
+        - points (边界信息)  ㄱ
+        - name (小区名)     ⊥ 这两个数据比较大，做异步加载。小cache，大cache，只有点显示小区，才加载大cache。
      */
 
     const mapCenter = [121.40003152077978, 31.152492021564836];
@@ -327,7 +327,7 @@
 
     // 根据小区名绘制label+边界
     function renderEstate(name, isUnblocked = false) {
-        getEstateInfo(name, function({points, title, point}) {
+        getEstateInfo(name, function({point, points, title}) {
             let labelTitle = name;
             const labelOffset = [labelTitle.length * -5,-35];
             // 能取到就是小区, 否则降级画点
@@ -351,7 +351,12 @@
         });
     }
 
-    function getEstateInfo(originName, callback) {
+    /**
+     *
+     * @param addressOrName
+     * @param callback {point, points, title}
+     */
+    function getEstateInfo(addressOrName, callback) {
         /*
         优先取小区数据. 'tags'包含 ['小区/楼盘'] 的就是小区, 一般都会有边界数据. 但要过滤掉末尾是'X门'的结果
         双相匹配：
@@ -365,7 +370,7 @@
         3. 需要扩大搜索结果数量到: 50
         '浦东新区崂山路645弄'-> '潍坊十村二小区' 45
          */
-        const name = estateAliasMap[originName] || originName;
+        const name = estateAliasMap[addressOrName] || addressOrName;
         if (estateCache.get(name) === undefined) {
             const local = new BMapGL.LocalSearch(map, {
                 // Doc: https://mapopen-pub-jsapi.bj.bcebos.com/jsapi/reference/jsapi_webgl_1_0.html#a8b3
@@ -405,8 +410,8 @@
                 } else {
                     console.log(`poi not found, name: ${name}`);
                     getPoint(name, function(point) {
-                        callback({point});
                         estateCache.set(name, {name, point});
+                        callback({point});
                     });
                 }
 
@@ -527,7 +532,6 @@
         if (boundaryCache == null) {
             if (!boundaryDataRequesting) {
                 boundaryDataRequesting = true;
-                // TODO: add timestamp
                 fetch(`data/boundaryCache.json`)
                     .then(response => response.json())
                     .then(json => {
