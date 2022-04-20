@@ -23,6 +23,45 @@ const {JSDOM} = jsdom;
 async function main() {
     // await getListPage();
     getWechat();
+    // getRegionStatusList();
+}
+
+async function getRegionStatusList() {
+    var url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650534542&idx=1&sn=9fc83f288d2021c2c6c3ff50e85213d6&chksm=8759c790b02e4e8681ce37ce3dc45f730d928791501e9d817611ae1909e421e4ecc31935406c&mpshare=1&scene=23&srcid=0420MtDIM9B00NCB8Pld1rby&sharer_sharetime=1650415827702&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+
+    const dom = await JSDOM.fromURL(url);
+    const {window} = dom;
+    const {document} = window;
+    const addresses = [];
+
+    const $ = jQuery = require('jquery')(window);
+    var type = -1; // 0: 防范区; 1: 管控区; 2: 封控区;
+    var ret = [];
+    $('#js_content p,#js_content table').each((i, item) => {
+        if ($(item).prop("tagName") === 'P') {
+            var regionName = $(item).find('span').text().trim();
+            if (regionName === '防范区') {
+                type = 0;
+            } else if (regionName === '管控区') {
+                type = 1;
+            } else if (regionName === '封控区') {
+                type = 2;
+            }
+        } else if ($(item).prop("tagName") === 'TABLE') {
+            if (ret[type] === undefined) {
+                ret[type] = [];
+            }
+            $(item).find('tbody tr').each((j, td) => {
+                // 跳过标题栏
+                if (j !== 0) {
+                    var address = $(td).find('p span:eq(0)').text().trim();
+                    ret[type].push(address);
+                }
+            });
+        }
+    });
+
+    fs.writeFileSync(`${__dirname}/data/region.json`, JSON.stringify(ret), 'utf8');
 }
 
 async function getListPage() {

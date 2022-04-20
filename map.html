@@ -131,6 +131,18 @@
         '闵行区顾戴路1199弄': '江南星城-纯翠江南',
         '闵行区虹莘路1601弄': '虹莘家园',
     };
+    /*
+    防范区：以下居民小区、自然村，近14天内无阳性感染者报告，被划分为“防范区”。rgb(0, 209, 0)
+    管控区：以下居民小区、自然村，近7天内无阳性感染者报告，被划分为“管控区”。rgb(255, 169, 0)
+    封控区：以下居民小区、自然村，近7天内有阳性感染者报告，被划分为“封控区”。rgb(255, 41, 65)
+     */
+    const iconType0 = new BMapGL.Icon('images/ic_release.svg', new BMapGL.Size(16, 16));
+    const iconType1 = new BMapGL.Icon('images/ic_protection.svg', new BMapGL.Size(16, 16));
+    const iconType2 = new BMapGL.Icon('images/ic_locked.svg', new BMapGL.Size(16, 16));
+    const regionPolygonOptions0 = {strokeWeight: 1, fillColor: 'rgb(0, 209, 0)', fillOpacity: 1};
+    const regionPolygonOptions1 = {strokeWeight: 1, fillColor: 'rgb(255, 169, 0)', fillOpacity: 1};
+    const regionPolygonOptions2 = {strokeWeight: 1, fillColor: 'rgb(255, 41, 65)', fillOpacity: 1};
+
     const covidIcon = new BMapGL.Icon('images/covid.svg', new BMapGL.Size(15, 15));
     const unblockIcon = new BMapGL.Icon('images/smile.png', new BMapGL.Size(15, 15));
     const defaultLabelStyle = {textAlign: 'center'};
@@ -151,10 +163,10 @@
         // 上海各区版图
         renderBoundary();
         // 古美街道版图
-        renderTownBoundary(mhgmPoints);
+        // renderTownBoundary(mhgmPoints);
 
         fsm.init();
-        renderUI();
+        render();
         renderLocationControl();
         renderCopyright();
 
@@ -163,6 +175,11 @@
          增加搜索框 https://lbsyun.baidu.com/jsdemo.htm#yCityLocation 搜索定位
          */
     });
+
+    function render() {
+        renderUI();
+        // renderRegionStatus();
+    }
 
     function initMap() {
         map.centerAndZoom(new BMapGL.Point(...mapCenter), mapZoom);
@@ -203,7 +220,7 @@
 
         $(window).on('hashchange', function(e) {
             // Review: Better to monitor data flow not hash change
-            renderUI();
+            render();
         });
         $('#dateSelector').change(function (e) {
             setHashParameter('date', e.target.value);
@@ -224,6 +241,20 @@
                 }
             }, "上海市");
         });
+    }
+
+    function renderRegionStatus() {
+        fetch(`data/region.json`)
+            .then(response => response.json())
+            .then(json => {
+                !$('#keepData').is(':checked') && map.clearOverlays();
+
+                json.forEach((names, i) => {
+                    names.forEach((name) => {
+                        renderEstate(name, undefined, i);
+                    });
+                });
+            });
     }
 
     /*
@@ -329,7 +360,7 @@
     }
 
     // 根据小区名绘制label+边界
-    function renderEstate(name, isUnblocked = false) {
+    function renderEstate(name, isUnblocked = false, type = -1) {
         getEstateInfo(name, function({point, points, title}) {
             let labelTitle = name;
             const labelOffset = [labelTitle.length * -5,-35];
@@ -340,11 +371,23 @@
                 labelOffset[0] = labelTitle.length * -6;
                 // labelOffset[1] = -44;
 
-                (isUnblocked || $('#showEstateBoundary').is(':checked')) && renderEstateBoundary(points, isUnblocked);
+                (isUnblocked || $('#showEstateBoundary').is(':checked')) && renderEstateBoundary(points, isUnblocked, type);
             }
 
             var marker = new BMapGL.Marker(point);
-            isUnblocked ? marker.setIcon(unblockIcon) : marker.setIcon(covidIcon);
+            switch(type) {
+                case 0:
+                    marker.setIcon(iconType0);
+                    break;
+                case 1:
+                    marker.setIcon(iconType1);
+                    break;
+                case 2:
+                    marker.setIcon(iconType2);
+                    break;
+                default:
+                    isUnblocked ? marker.setIcon(unblockIcon) : marker.setIcon(covidIcon);
+            }
             var label = new BMapGL.Label(labelTitle, {offset: new BMapGL.Size(...labelOffset)});
             label.setStyle(isUnblocked ? unblockLabelStyle : defaultLabelStyle);
             !isLabelDisplay && label.hide();
@@ -448,8 +491,22 @@
         map.addOverlay(polygon);
     }
 
-    function renderEstateBoundary(points, keepOverlay) {
-        var polygon = new BMapGL.Polygon([points.join(';')], estatePolygonOptions);  //创建多边形
+    function renderEstateBoundary(points, keepOverlay, type = -1) {
+        var options = null;
+        switch(type) {
+            case 0:
+                options = regionPolygonOptions0;
+                break;
+            case 1:
+                options = regionPolygonOptions1;
+                break;
+            case 2:
+                options = regionPolygonOptions2;
+                break;
+            default:
+                options = estatePolygonOptions;
+        }
+        var polygon = new BMapGL.Polygon([points.join(';')], options);  //创建多边形
         keepOverlay && polygon.disableMassClear();
         map.addOverlay(polygon);
     }
