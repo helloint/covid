@@ -132,16 +132,16 @@
         '闵行区虹莘路1601弄': '虹莘家园',
     };
     /*
-    防范区：以下居民小区、自然村，近14天内无阳性感染者报告，被划分为“防范区”。rgb(0, 209, 0)
-    管控区：以下居民小区、自然村，近7天内无阳性感染者报告，被划分为“管控区”。rgb(255, 169, 0)
-    封控区：以下居民小区、自然村，近7天内有阳性感染者报告，被划分为“封控区”。rgb(255, 41, 65)
+    防范区：以下居民小区、自然村，近14天内无阳性感染者报告，被划分为“防范区”。rgb(0, 209, 0)   #6bdab4
+    管控区：以下居民小区、自然村，近7天内无阳性感染者报告，被划分为“管控区”。rgb(255, 169, 0)  #fdc368
+    封控区：以下居民小区、自然村，近7天内有阳性感染者报告，被划分为“封控区”。rgb(255, 41, 65)  #e47d7e
      */
     const iconType0 = new BMapGL.Icon('images/ic_release.svg', new BMapGL.Size(16, 16));
     const iconType1 = new BMapGL.Icon('images/ic_protection.svg', new BMapGL.Size(16, 16));
     const iconType2 = new BMapGL.Icon('images/ic_locked.svg', new BMapGL.Size(16, 16));
-    const regionPolygonOptions0 = {strokeWeight: 1, fillColor: 'rgb(0, 209, 0)', fillOpacity: 1};
-    const regionPolygonOptions1 = {strokeWeight: 1, fillColor: 'rgb(255, 169, 0)', fillOpacity: 1};
-    const regionPolygonOptions2 = {strokeWeight: 1, fillColor: 'rgb(255, 41, 65)', fillOpacity: 1};
+    const regionPolygonOptions0 = {strokeWeight: 1, fillColor: '#6bdab4', fillOpacity: 1};
+    const regionPolygonOptions1 = {strokeWeight: 1, fillColor: '#fdc368', fillOpacity: 1};
+    const regionPolygonOptions2 = {strokeWeight: 1, fillColor: '#e47d7e', fillOpacity: 1};
 
     const covidIcon = new BMapGL.Icon('images/covid.svg', new BMapGL.Size(15, 15));
     const unblockIcon = new BMapGL.Icon('images/smile.png', new BMapGL.Size(15, 15));
