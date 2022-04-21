@@ -149,7 +149,12 @@
     const unblockLabelStyle = {border: 0, textAlign: 'center', background: 'transparent'};
     const districtPolygonOptions = {strokeWeight: 1, fillColor: 'blue', fillOpacity: 0.02};
     const regionPolygonOptions = {strokeWeight: 1, fillColor: 'blue', fillOpacity: 0.05};
-    const estatePolygonOptions = {strokeColor:"blue", strokeWeight:1, strokeOpacity:0.5};
+    const estatePolygonOptions = {
+        strokeWeight: 1,
+        strokeOpacity: 0.5,
+        fillColor: '#e47d7e',
+        fillOpacity: 1
+    };
 
     const map = new BMapGL.Map('container');
     const mapGeo = new BMapGL.Geocoder();
@@ -178,6 +183,7 @@
 
     function render() {
         renderUI();
+        // "闵行区七宝村（七宝村散区）" 这个要去掉
         // renderRegionStatus();
     }
 
