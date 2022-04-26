@@ -24,6 +24,80 @@ async function main() {
     // await getListPage();
     getWechat();
     // getRegionStatusList();
+    // getRegionData();
+}
+
+async function getRegionData() {
+    var url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654530073&idx=1&sn=5e7e7abfbc6fbbee11ec0e1237f26fd6&chksm=bd31f7628a467e74f3b5743027fd06455dd8792f90bba8b0f54349e7ec576086bbeb1ee93341&mpshare=1&scene=23&srcid=0426KyKEwUqTu4Z46HJoz2m7&sharer_sharetime=1650930783782&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+    const dom = await JSDOM.fromURL(url);
+    const {window} = dom;
+    const {document} = window;
+    const regionData = {};
+    const $ = jQuery = require('jquery')(window);
+    var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
+
+    // 无症状感染者1—无症状感染者3571，居住于浦东新区，
+    // 无症状感染者3572—无症状感染者6086，居住于黄浦区，
+    // 无症状感染者6087—无症状感染者7208，居住于徐汇区，
+    // 病例1—病例26，居住于浦东新区，
+    // 均为本市闭环隔离管控人员
+    // 在风险人群筛查中发现新冠病毒核酸检测结果异常，即被隔离管控。
+    // 为此前报告的本土无症状感染者
+    $('#js_content section[data-id="109677"]').each((i, item)=>{
+        // 本土病例情况
+        // 本土无症状感染者情况
+        var subjectTitle = $(item).find('section section:first').text().trim();
+        var type = null;
+        var region = null;
+        var regex = null;
+
+        if (subjectTitle === '本土病例情况') {
+            type = 0;
+            regex = /病例(\d+)(—病例(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
+        } else if (subjectTitle === '本土无症状感染者情况') {
+            type = 1;
+            regex = /无症状感染者(\d+)(—无症状感染者(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
+        }
+
+        var dataBegin = false;
+        $(item).find('section section p').each((j, row) => {
+            // "均为"
+            var content = $(row).text().trim();
+            if (content.startsWith('均为')) {
+                dataBegin = true;
+                return true;
+            }
+            if (content.startsWith('在风险人群筛查中发现')) {
+                dataBegin = false;
+                return false;
+            }
+
+            if (dataBegin && content) {
+                var count = 0;
+                // 病例676，居住于黄浦区，
+                // 病例678—病例681，居住于虹口区，
+                var result = content.match(regex);
+                if (result && result.length === 5) {
+                    var start = parseInt(result[1], 10);
+                    var end = result[3] ? parseInt(result[3], 10) : start;
+                    count = end - start + 1;
+                    region = regions.indexOf(result[4]);
+
+                    if (!regionData[result[4]]) {
+                        regionData[result[4]] = [0,0];
+                    }
+                    var tmp = regionData[result[4]];
+                    tmp[type] = count;
+                    regionData[result[4]] = tmp;
+                }
+            }
+        });
+    });
+
+    fs.writeFileSync(`${__dirname}/data/regionData.json`, JSON.stringify(regionData), 'utf8');
+    for (const [key, value] of Object.entries(regionData)) {
+        console.log(`${key},${value[0]},${value[1]}`);
+    }
 }
 
 async function getRegionStatusList() {
