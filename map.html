@@ -125,6 +125,7 @@
         '闵行区龙茗路1458弄': '蓝色港湾',
         '闵行区龙茗路513弄': '东方御花园-南区',
         '闵行区龙茗路513弄13支弄': '东方御花园-南区',
+        '闵行区古美西路753弄': '东方御花园-北区',
         // '闵行区东兰路307号': '平南一二村',  // TODO: 为什么会有重复render?
         '闵行区古龙路1065弄': '新时代富嘉花园',
         '闵行区漕宝路1508弄': '东兰新村',
@@ -182,9 +183,9 @@
     });
 
     function render() {
-        renderUI();
         // "闵行区七宝村（七宝村散区）" 这个要去掉
         // renderRegionStatus();
+        renderUI();
     }
 
     function initMap() {
@@ -437,10 +438,11 @@
                     // '批发市场/集市' 浦东新区高青路960号 新联丰农贸市场
                     // '宾馆', '旅店' 浦东新区康桥路1200号 '聚沁园时尚宾馆'
                     // '村庄' 浦东新区东风村
-                    var poi = pois.find((poi) => !poi.title.endsWith('门') && poi.tags
+                    var poi = pois.find((poi) => !poi.title.endsWith('门') && !poi.title.includes('-')
+                        && poi.tags
                         && (poi.tags.includes('小区/楼盘') || poi.tags.includes('宾馆')
                             || poi.tags.includes('村庄') || poi.tags.includes('批发市场/集市')));
-                    if (!poi) poi = pois[0];
+                    if (!poi || estateAliasMap[addressOrName]) poi = pois[0];
                     var resultIndex = pois.indexOf(poi);
                     //根据uid尝试获取边界信息
                     getPointsByUid(poi.uid, (points) => {
