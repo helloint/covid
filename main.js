@@ -21,21 +21,25 @@ const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 
 async function main() {
-    const type = process.argv.slice(2)[0];
-    const url = process.argv.slice(2)[1];
+    var type = process.argv.slice(2)[0];
+    var url = process.argv.slice(2)[1];
     switch(type) {
         case 'l':
             await getListPage();
         case 'w':
-            // https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd
+            // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
             getWechat(url);
             break;
+        case 'mh':
+            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650544187&idx=2&sn=70cd89bbfbd407a038dcf893dd7fc4ed&chksm=875e2d25b029a4339f5ee51bff2c616132f9e2ee1746ec04507b87e84e66619f07a55300487a&mpshare=1&scene=23&srcid=0427F3X92JT0J2iKGKDwMlcx&sharer_sharetime=1651025378365&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            getMhWechat(url);
+            break;
         case 'rs':
-            // 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
-            getRegionStatusList();
+            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            getRegionStatusList(url);
             break;
         case 'rd':
-            // https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530350\&idx\=1\&sn\=fa9dc80ae6d99baad6ca0299c5f87029\&chksm\=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c\&mpshare\=1\&scene\=23\&srcid\=0427YexSu5Tiyg79L6eo1FH3\&sharer_sharetime\=1651017328155\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd
+            // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530350\&idx\=1\&sn\=fa9dc80ae6d99baad6ca0299c5f87029\&chksm\=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c\&mpshare\=1\&scene\=23\&srcid\=0427YexSu5Tiyg79L6eo1FH3\&sharer_sharetime\=1651017328155\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
             getRegionData(url);
             break;
         default:
@@ -174,6 +178,14 @@ async function getListPage() {
 
 function getWechat(url) {
     getAddressFromWechat(url).then(result => {
+        if (result) {
+            fs.writeFileSync(`${__dirname}/data/${result.date}.json`, JSON.stringify(result.addresses), 'utf8');
+        }
+    });
+}
+
+function getMhWechat(url) {
+    getAddressFromMhWechat(url).then(result => {
         if (result) {
             fs.writeFileSync(`${__dirname}/data/${result.date}.json`, JSON.stringify(result.addresses), 'utf8');
         }
@@ -363,6 +375,61 @@ async function getAddressFromWechat(url) {
         } else {
             console.log('something wrong!');
         }
+    });
+
+    console.log(`addresses.length: ${addresses.length}`);
+    window.close();
+
+    return {
+        date: date, addresses: addresses,
+    };
+}
+
+// 从闵行微信公众号获取区级数据。
+async function getAddressFromMhWechat(url) {
+    const dom = await JSDOM.fromURL(url);
+    const {window} = dom;
+    const {document} = window;
+    const addresses = [];
+
+    const $ = jQuery = require('jquery')(window);
+    // TODO: why document.title return ''?
+    // const title = document.title;
+    const title = $('#activity-name').text();
+    const match = title.match('(\\d+)月(\\d+)日闵行新增');
+    if (!match) {
+        console.log('文章不匹配， exit。');
+        return null;
+    }
+
+    const month = parseInt(match[1], 10);
+    const day = parseInt(match[2], 10);
+    const date = `2022-${month < 10 ? '0' : ''}${month}-${day < 10 ? '0' : ''}${day}`;
+    console.log(`date: ${date}`);
+
+    let areaName = '闵行区';
+    $('#js_content>section>section>section>p').each((index, item) => {
+        let address = $(item).text().trim();
+        /*
+        Samples:
+        嘉定工业区陆渡村、草庵村、艾米公寓。
+        窑墩村，
+        周祝公路35号。
+         */
+        if (address.substr(-1) === '。' || address.substr(-1) === '，' || address.substr(-1) === '、') {
+            address = address.substring(0, address.length - 1);
+        }
+
+        let results = [];
+        if (address.indexOf('、') > -1) {
+            results = address.split('、');
+        } else {
+            results = [address];
+        }
+        results.forEach(item => {
+            addresses.push(`${areaName}${item}`);
+        });
+
     });
 
     console.log(`addresses.length: ${addresses.length}`);
