@@ -21,14 +21,30 @@ const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 
 async function main() {
-    // await getListPage();
-    getWechat();
-    // getRegionStatusList();
-    // getRegionData();
+    const type = process.argv.slice(2)[0];
+    const url = process.argv.slice(2)[1];
+    switch(type) {
+        case 'l':
+            await getListPage();
+        case 'w':
+            // https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd
+            getWechat(url);
+            break;
+        case 'rs':
+            // 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            getRegionStatusList();
+            break;
+        case 'rd':
+            // https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530350\&idx\=1\&sn\=fa9dc80ae6d99baad6ca0299c5f87029\&chksm\=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c\&mpshare\=1\&scene\=23\&srcid\=0427YexSu5Tiyg79L6eo1FH3\&sharer_sharetime\=1651017328155\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd
+            getRegionData(url);
+            break;
+        default:
+            console.log('No match type.');
+    }
 }
 
 async function getRegionData() {
-    var url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654530073&idx=1&sn=5e7e7abfbc6fbbee11ec0e1237f26fd6&chksm=bd31f7628a467e74f3b5743027fd06455dd8792f90bba8b0f54349e7ec576086bbeb1ee93341&mpshare=1&scene=23&srcid=0426KyKEwUqTu4Z46HJoz2m7&sharer_sharetime=1650930783782&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+    var url = 'http://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654530350&idx=1&sn=fa9dc80ae6d99baad6ca0299c5f87029&chksm=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c&mpshare=1&scene=23&srcid=0427YexSu5Tiyg79L6eo1FH3&sharer_sharetime=1651017328155&sharer_shareid=b547167d055d935fd3f9f56094533f76#rd';
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const {document} = window;
@@ -94,15 +110,21 @@ async function getRegionData() {
         });
     });
 
-    fs.writeFileSync(`${__dirname}/data/regionData.json`, JSON.stringify(regionData), 'utf8');
-    for (const [key, value] of Object.entries(regionData)) {
-        console.log(`${key},${value[0]},${value[1]}`);
-    }
+    const ret = [];
+    regions.forEach((item, i) => {
+        if (regionData[item]) {
+            ret.push([item, ...regionData[item]]);
+        } else {
+            ret.push([item, 0, 0]);
+        }
+    });
+    ret.forEach((item, i) => {
+        console.log(item.join(','));
+    });
+    fs.writeFileSync(`${__dirname}/data/regions.json`, JSON.stringify(ret), 'utf8');
 }
 
-async function getRegionStatusList() {
-    var url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
-
+async function getRegionStatusList(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const {document} = window;
@@ -150,9 +172,7 @@ async function getListPage() {
     });
 }
 
-function getWechat() {
-    const url = process.argv.slice(2)[0];
-    // const url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654522433&idx=1&sn=7c55d1f38d41f388afde2f5e6c6d6e75&chksm=bd31d13a8a46582c2bc466f28366f5140b6404f528c3597e181db67787ff7b3e7596424dbaa4&mpshare=1&scene=23&srcid=0330DDHpcBFRBI4PzCNNbbGv&sharer_sharetime=1648605658815&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+function getWechat(url) {
     getAddressFromWechat(url).then(result => {
         if (result) {
             fs.writeFileSync(`${__dirname}/data/${result.date}.json`, JSON.stringify(result.addresses), 'utf8');
