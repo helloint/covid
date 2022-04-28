@@ -38,17 +38,16 @@ async function main() {
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             getRegionStatusList(url);
             break;
-        case 'rd':
-            // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530350\&idx\=1\&sn\=fa9dc80ae6d99baad6ca0299c5f87029\&chksm\=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c\&mpshare\=1\&scene\=23\&srcid\=0427YexSu5Tiyg79L6eo1FH3\&sharer_sharetime\=1651017328155\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
-            getRegionData(url);
+        case 'num':
+            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654530350&idx=1&sn=fa9dc80ae6d99baad6ca0299c5f87029&chksm=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c&mpshare=1&scene=23&srcid=0428EWMT2eYoWpbSoM4x5yky&sharer_sharetime=1651103424781&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            getNumByRegion(url);
             break;
         default:
             console.log('No match type.');
     }
 }
 
-async function getRegionData() {
-    var url = 'http://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654530350&idx=1&sn=fa9dc80ae6d99baad6ca0299c5f87029&chksm=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c&mpshare=1&scene=23&srcid=0427YexSu5Tiyg79L6eo1FH3&sharer_sharetime=1651017328155&sharer_shareid=b547167d055d935fd3f9f56094533f76#rd';
+async function getNumByRegion(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const {document} = window;
@@ -56,13 +55,15 @@ async function getRegionData() {
     const $ = jQuery = require('jquery')(window);
     var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
 
-    // 无症状感染者1—无症状感染者3571，居住于浦东新区，
-    // 无症状感染者3572—无症状感染者6086，居住于黄浦区，
-    // 无症状感染者6087—无症状感染者7208，居住于徐汇区，
-    // 病例1—病例26，居住于浦东新区，
-    // 均为本市闭环隔离管控人员
-    // 在风险人群筛查中发现新冠病毒核酸检测结果异常，即被隔离管控。
-    // 为此前报告的本土无症状感染者
+    /*
+    无症状感染者1—无症状感染者3571，居住于浦东新区，
+    无症状感染者3572—无症状感染者6086，居住于黄浦区，
+    无症状感染者6087—无症状感染者7208，居住于徐汇区，
+    病例1—病例26，居住于浦东新区，
+    均为本市闭环隔离管控人员
+    在风险人群筛查中发现新冠病毒核酸检测结果异常，即被隔离管控。
+    为此前报告的本土无症状感染者
+     */
     $('#js_content section[data-id="109677"]').each((i, item)=>{
         // 本土病例情况
         // 本土无症状感染者情况
@@ -70,29 +71,26 @@ async function getRegionData() {
         var type = null;
         var region = null;
         var regex = null;
-
+        var startIndex = 0;
         if (subjectTitle === '本土病例情况') {
-            type = 0;
-            regex = /病例(\d+)(—病例(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
+            startIndex = 0;
+            regex = /病例(\d+)([—、]病例(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
         } else if (subjectTitle === '本土无症状感染者情况') {
-            type = 1;
-            regex = /无症状感染者(\d+)(—无症状感染者(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
+            startIndex = 3;
+            regex = /无症状感染者(\d+)([—、]无症状感染者(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
         }
 
-        var dataBegin = false;
+        var indexOffset = 0;
         $(item).find('section section p').each((j, row) => {
             // "均为"
             var content = $(row).text().trim();
             if (content.startsWith('均为')) {
-                dataBegin = true;
-                return true;
-            }
-            if (content.startsWith('在风险人群筛查中发现')) {
-                dataBegin = false;
-                return false;
+                indexOffset = startIndex === 0 ? 2 : 1;
+            } else if (content.startsWith('在风险人群筛查中发现')) {
+                indexOffset = 1;
             }
 
-            if (dataBegin && content) {
+            if (content) {
                 var count = 0;
                 // 病例676，居住于黄浦区，
                 // 病例678—病例681，居住于虹口区，
@@ -104,10 +102,10 @@ async function getRegionData() {
                     region = regions.indexOf(result[4]);
 
                     if (!regionData[result[4]]) {
-                        regionData[result[4]] = [0,0];
+                        regionData[result[4]] = [0,0,0,0,0];
                     }
                     var tmp = regionData[result[4]];
-                    tmp[type] = count;
+                    tmp[startIndex + indexOffset] = count;
                     regionData[result[4]] = tmp;
                 }
             }
@@ -123,9 +121,9 @@ async function getRegionData() {
         }
     });
     ret.forEach((item, i) => {
+        // output the log into Excel
         console.log(item.join(','));
     });
-    fs.writeFileSync(`${__dirname}/data/regions.json`, JSON.stringify(ret), 'utf8');
 }
 
 async function getRegionStatusList(url) {

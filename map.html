@@ -628,10 +628,19 @@
         }
     }
 
+    var dailyData = null;
+
     function fetchData(date, callback) {
-        fetch(`data/${date}.json`)
-            .then(response => response.json())
-            .then(json => callback(json));
+        if (dailyData === null) {
+            fetch(`data/daily.json`)
+                .then(response => response.json())
+                .then(json => {
+                    dailyData = json;
+                    callback(dailyData[date]);
+                });
+        } else {
+            callback(dailyData[date]);
+        }
     }
 
     // 根据小区Uid获取小区边界
