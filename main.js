@@ -24,17 +24,17 @@ async function main() {
     var type = process.argv.slice(2)[0];
     var url = process.argv.slice(2)[1];
     switch(type) {
-        case 'l':
+        case 'list':
             await getListPage();
-        case 'w':
+        case 'shaddr':
             // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
             getWechat(url);
             break;
-        case 'mh':
+        case 'mhaddr':
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650544187&idx=2&sn=70cd89bbfbd407a038dcf893dd7fc4ed&chksm=875e2d25b029a4339f5ee51bff2c616132f9e2ee1746ec04507b87e84e66619f07a55300487a&mpshare=1&scene=23&srcid=0427F3X92JT0J2iKGKDwMlcx&sharer_sharetime=1651025378365&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             getMhWechat(url);
             break;
-        case 'rs':
+        case 'level':
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             getRegionStatusList(url);
             break;
@@ -150,7 +150,7 @@ async function getRegionStatusList(url) {
                 if (ret[type] === undefined) {
                     ret[type] = [];
                 }
-                var address = $(tr).find('td:eq(0)').text().trim();
+                var address = $(tr).find('td:eq(1)').text().trim();
                 ret[type].push('闵行区' + address);
             }
         });
@@ -175,9 +175,14 @@ async function getListPage() {
 }
 
 function getWechat(url) {
-    getAddressFromWechat(url).then(result => {
-        if (result) {
-            fs.writeFileSync(`${__dirname}/data/${result.date}.json`, JSON.stringify(result.addresses), 'utf8');
+    getAddressFromWechat(url).then(({date, addresses}) => {
+        if (addresses) {
+            const dailyFeed = `${__dirname}/data/daily.json`;
+            const dailySingleFeed = `${__dirname}/data/daily/${date}.json`;
+            const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
+            dailyData[date] = addresses;
+            fs.writeFileSync(dailyFeed, JSON.stringify(dailyData), 'utf8');
+            fs.writeFileSync(dailySingleFeed, JSON.stringify(addresses), 'utf8');
         }
     });
 }
