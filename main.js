@@ -50,10 +50,17 @@ async function main() {
 async function getNumByRegion(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
-    const {document} = window;
     const regionData = {};
     const $ = jQuery = require('jquery')(window);
     var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
+
+    var summary = $('#js_content section[data-id="106156"] p:first').text().trim();
+    var summaryRegex = /市卫健委今早（\d+日）通报：\d+年\d+月\d+日0—24时，新增本土新冠肺炎确诊病例(\d+)和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。/;
+    var result = summary.match(summaryRegex);
+    if (result) {
+        // output summary data
+        console.log([result[1], result[2], result[3], result[4], result[5]].join(','));
+    }
 
     /*
     无症状感染者1—无症状感染者3571，居住于浦东新区，
