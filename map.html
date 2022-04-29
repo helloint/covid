@@ -96,6 +96,10 @@
         <img id="stopBtn" class="control-btn" src="images/stop.svg" />
         <img id="playBtn" class="control-btn" src="images/play.svg" />
     </div>
+    <div class="row">
+        <input type="checkbox" class="data-input" id="mapMode">
+        <label class="text" for="mapMode">三区</label>
+    </div>
 </div>
 <div class="view-controller bottom-left">
     <select id="districtSelector" class="selector row"></select>
@@ -243,6 +247,11 @@
             !$(this).is(':checked') && map.clearOverlays();
             setHashParameter('keep', $(this).is(':checked') ? 1 : 0);
         });
+        $('#mapMode').change(function (e) {
+            $(this).is(':checked') ? renderRegionStatus() : renderUI();
+            // setHashParameter('mode', $(this).is(':checked') ? 1 : 0);
+        });
+
         $('#showEstateBoundary').change(function (e) {
             // FIXME: handle deeplink
             setHashParameter('estate', $(this).is(':checked') ? 1 : 0);
