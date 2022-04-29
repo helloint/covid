@@ -639,7 +639,7 @@
                 .then(response => response.json())
                 .then(json => {
                     dailyData = json;
-                    callback(dailyData[date]);
+                    callback(dailyData[date] || []);
                 });
         } else {
             callback(dailyData[date]);
