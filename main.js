@@ -54,12 +54,18 @@ async function getNumByRegion(url) {
     const $ = jQuery = require('jquery')(window);
     var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
 
+    /*
+    Summary Template:
+    市卫健委今早（30日）通报：2022年4月29日0—24时，新增本土新冠肺炎确诊病例1249和无症状感染者8932例，
+    其中985例确诊病例为既往无症状感染者转归，264例确诊病例和8932例无症状感染者在隔离管控中发现。
+    新增境外输入性新冠肺炎确诊病例1例，在闭环管控中发现。
+     */
     var summary = $('#js_content section[data-id="106156"] p:first').text().trim();
-    var summaryRegex = /市卫健委今早（\d+日）通报：\d+年\d+月\d+日0—24时，新增本土新冠肺炎确诊病例(\d+)和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。/;
+    var summaryRegex = /市卫健委今早（\d+日）通报：\d+年\d+月\d+日0—24时，新增本土新冠肺炎确诊病例(\d+)和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(，其余在相关风险人群排查中发现)?。/;
     var result = summary.match(summaryRegex);
     if (result) {
         // output summary data
-        console.log([result[1], result[2], result[3], result[4], result[5]].join(','));
+        console.log(['总数', result[1], result[2], result[3], result[4], result[5]].join(','));
     }
 
     /*
@@ -76,11 +82,15 @@ async function getNumByRegion(url) {
         // 本土无症状感染者情况
         var subjectTitle = $(item).find('section section:first').text().trim();
         var type = null;
-        var region = null;
         var regex = null;
         var startIndex = 0;
         if (subjectTitle === '本土病例情况') {
             startIndex = 0;
+            /*
+            Template:
+            病例676，居住于黄浦区，
+            病例678—病例681，居住于虹口区，
+             */
             regex = /病例(\d+)([—、]病例(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
         } else if (subjectTitle === '本土无症状感染者情况') {
             startIndex = 3;
@@ -88,32 +98,54 @@ async function getNumByRegion(url) {
         }
 
         var indexOffset = 0;
+        /*
+        0 隔离管控确诊 95
+        1 隔离管控转归 1356
+        2 风险排查确诊 5
+        3 隔离管控无症状 1950
+        4 风险排查无症状 66
+         */
+        var tempData = {};
         $(item).find('section section p').each((j, row) => {
-            // "均为"
             var content = $(row).text().trim();
-            if (content.startsWith('均为')) {
-                indexOffset = startIndex === 0 ? 2 : 1;
-            } else if (content.startsWith('在风险人群筛查中发现')) {
-                indexOffset = 1;
-            }
-
             if (content) {
                 var count = 0;
-                // 病例676，居住于黄浦区，
-                // 病例678—病例681，居住于虹口区，
                 var result = content.match(regex);
                 if (result && result.length === 5) {
                     var start = parseInt(result[1], 10);
                     var end = result[3] ? parseInt(result[3], 10) : start;
                     count = end - start + 1;
-                    region = regions.indexOf(result[4]);
 
-                    if (!regionData[result[4]]) {
-                        regionData[result[4]] = [0,0,0,0,0];
-                    }
-                    var tmp = regionData[result[4]];
-                    tmp[startIndex + indexOffset] = count;
-                    regionData[result[4]] = tmp;
+                    tempData[result[4]] = count;
+                }
+
+                /*
+                "均为"前面的，是【隔离管控】0，3
+                "在风险人群筛查中发现"前面的，是【社会面】2，4
+                "为此前报告的本土无症状感染者"前面的，是【无症状转归确诊】1
+                 */
+                var sectionEnded = false;
+                if (content.startsWith('均为')) {
+                    indexOffset = startIndex === 0 ? 0 : 0;
+                    sectionEnded = true;
+                } else if (content.startsWith('在风险人群筛查中发现')) {
+                    indexOffset = startIndex === 0 ? 2 : 1;
+                    sectionEnded = true;
+                } else if (content.startsWith('为此前报告的本土无症状感染者')) {
+                    indexOffset = 1;
+                    sectionEnded = true;
+                }
+
+                if (sectionEnded) {
+                    regions.forEach((region, i) => {
+                        if (!regionData[region]) {
+                            regionData[region] = [0,0,0,0,0];
+                        }
+                        if (tempData[region]) {
+                            regionData[region][startIndex + indexOffset] = tempData[region];
+                        }
+                    });
+                    tempData = {};
                 }
             }
         });
