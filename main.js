@@ -26,15 +26,15 @@ async function main() {
     switch(type) {
         case 'list':
             await getListPage();
-        case 'shaddr':
+        case 'daily':
             // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
             getWechat(url);
             break;
-        case 'mhaddr':
+        case 'dailymh':
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650544187&idx=2&sn=70cd89bbfbd407a038dcf893dd7fc4ed&chksm=875e2d25b029a4339f5ee51bff2c616132f9e2ee1746ec04507b87e84e66619f07a55300487a&mpshare=1&scene=23&srcid=0427F3X92JT0J2iKGKDwMlcx&sharer_sharetime=1651025378365&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             getMhWechat(url);
             break;
-        case 'level':
+        case '3':
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             getRegionStatusList(url);
             break;
@@ -56,12 +56,12 @@ async function getNumByRegion(url) {
 
     /*
     Summary Template:
-    市卫健委今早（30日）通报：2022年4月29日0—24时，新增本土新冠肺炎确诊病例1249和无症状感染者8932例，
-    其中985例确诊病例为既往无症状感染者转归，264例确诊病例和8932例无症状感染者在隔离管控中发现。
-    新增境外输入性新冠肺炎确诊病例1例，在闭环管控中发现。
+    新增本土新冠肺炎确诊病例1249和无症状感染者8932例，
+    其中985例确诊病例为既往无症状感染者转归，
+    264例确诊病例和8932例无症状感染者在隔离管控中发现。
      */
     var summary = $('#js_content section[data-id="106156"] p:first').text().trim();
-    var summaryRegex = /市卫健委今早（\d+日）通报：\d+年\d+月\d+日0—24时，新增本土新冠肺炎确诊病例(\d+)和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(，其余在相关风险人群排查中发现)?。/;
+    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(，其余在相关风险人群排查中发现)?。/;
     var result = summary.match(summaryRegex);
     if (result) {
         // output summary data
@@ -174,11 +174,12 @@ async function getRegionStatusList(url) {
     const $ = jQuery = require('jquery')(window);
     var type = -1; // 0: 防范区; 1: 管控区; 2: 封控区;
     var ret = [];
+    var count = 0;
     $('#js_content table').each((i, item) => {
         $(item).find('tbody tr').each((j, tr) => {
             // 跳过标题栏
-            if (j !== 0) {
-                var regionName = $(tr).find('td:eq(2)').text().trim();
+            if (j >= 2) {
+                var regionName = $(tr).find('td:eq(3)').text().trim();
                 if (regionName === '防范区') {
                     type = 0;
                 } else if (regionName === '管控区') {
@@ -190,11 +191,13 @@ async function getRegionStatusList(url) {
                     ret[type] = [];
                 }
                 var address = $(tr).find('td:eq(1)').text().trim();
+                count++;
                 ret[type].push('闵行区' + address);
             }
         });
     });
 
+    console.log(`count: ${count}`);
     fs.writeFileSync(`${__dirname}/data/region.json`, JSON.stringify(ret), 'utf8');
 }
 
