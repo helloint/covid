@@ -6,6 +6,8 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/javascript-state-machine@3.1.0/lib/state-machine.min.js"></script>
     <script type="text/javascript" src="https://api.map.baidu.com/api?type=webgl&v=1.0&ak=FOghoenHAy69lWj3HgkVW5kz4IRgbQSi"></script>
+    <script type="text/javascript" src="util.js"></script>
+    <script type="text/javascript" src="map.js"></script>
     <script type="text/javascript" src="data/pointCache.js"></script>
     <script type="text/javascript" src="data/estateCache.js?20220407"></script>
     <title>上海疫情地图</title>
@@ -28,51 +30,6 @@
         .view-controller {z-index: 100; display: flex; flex-direction: row;}
         .view-controller .selector {font-size: 22px; color: blue;}
     </style>
-    <script>
-        // Util Functions
-        function getHashParameter(key){
-            var params = getHashParameters();
-            return params[key];
-        }
-
-        function getHashParameters(){
-            var arr = (location.hash || "").replace(/^\#/,'').split("&");
-            var params = {};
-            for(var i=0; i<arr.length; i++){
-                var data = arr[i].split("=");
-                if(data.length === 2){
-                    params[data[0]] = decodeURIComponent(data[1]);
-                }
-            }
-            return params;
-        }
-
-        function setHashParameter(key, value){
-            var params = getHashParameters();
-            if (value == null) {
-                delete params[key];
-            } else {
-                params[key] = value;
-            }
-            var keys = Object.keys(params);
-            var arr = [];
-            for(var i=0; i<keys.length; i++){
-                if (params[keys[i]]) {
-                    arr.push([keys[i] + '=' + encodeURIComponent(params[keys[i]])]);
-                }
-            }
-            location.hash = '#' + arr.join('&');
-        }
-
-        function parseDate(date) {
-            var yyyy = date.getFullYear();
-            var mm = date.getMonth() + 1;
-            mm = mm >= 10 ? mm : '0' + mm;
-            var dd = date.getDate();
-            dd = dd >= 10 ? dd : '0' + dd;
-            return `${yyyy}-${mm}-${dd}`;
-        }
-    </script>
     <script>
         var _hmt = _hmt || [];
         (function() {
@@ -281,72 +238,6 @@
         const date = new Date();
         document.getElementById('pageTitle').innerText = parseDate(date);
     }
-
-    /*
-    state:
-    0: idle, show PLAY icon
-    1: playing, show STOP icon
-
-    action:
-    0 -> 1 start()
-    1 -> 0 stop()
-     */
-    var fsm = new StateMachine({
-        transitions: [
-            {name: 'init', from: 'none', to: 'idle'},
-            {name: 'start', from: 'idle', to: 'playing'},
-            {name: 'stop', from: 'playing', to: 'idle'},
-        ],
-        data: {
-            debug: false,
-            selector: document.getElementById('dateSelector'),
-            iid: null,
-        },
-        methods: {
-            onInit: function () {
-                this.debug && console.log('onInit');
-                $('#playBtn').click(function(){
-                    fsm.start();
-                });
-                $('#stopBtn').click(function(){
-                    fsm.stop();
-                });
-            },
-            onIdle: function () {
-                this.debug && console.log('onInit');
-                $('#playBtn').show();
-                $('#stopBtn').hide();
-                this.selector.disabled = false;
-            },
-            onLeaveIdle: function () {
-                this.debug && console.log('onLeaveIdle');
-                // make selector readonly https://stackoverflow.com/a/368834/8175165
-                this.selector.disabled = true;
-            },
-            onPlaying: function () {
-                this.debug && console.log('onPlaying');
-                $('#playBtn').hide();
-                $('#stopBtn').show();
-
-                // For resume and play
-                let index = this.selector.selectedIndex;
-                this.iid = setInterval(()=>{
-                    index = index - 1;
-                    if (index >= 0) {
-                        this.selector.selectedIndex = index;
-                        this.selector.dispatchEvent(new Event('change'));
-                    } else {
-                        fsm.stop();
-                    }
-                }, 1000);
-            },
-            onStop: function () {
-                this.debug && console.log('onStop');
-                this.iid && clearInterval(this.iid);
-                this.iid = null;
-            },
-        }
-    });
 
     function renderUI() {
         var currentDate = getHashParameter("date");
