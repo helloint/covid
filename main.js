@@ -219,22 +219,28 @@ async function getListPage() {
 function getWechat(url) {
     getAddressFromWechat(url).then(({date, addresses}) => {
         if (addresses) {
-            const dailyFeed = `${__dirname}/data/daily.json`;
-            const dailySingleFeed = `${__dirname}/data/daily/${date}.json`;
-            const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
-            dailyData[date] = addresses;
-            fs.writeFileSync(dailyFeed, JSON.stringify(dailyData), 'utf8');
-            fs.writeFileSync(dailySingleFeed, JSON.stringify(addresses), 'utf8');
+            writeDailyAddressesToFile(date, addresses);
         }
     });
 }
 
 function getMhWechat(url) {
-    getAddressFromMhWechat(url).then(result => {
-        if (result) {
-            fs.writeFileSync(`${__dirname}/data/${result.date}.json`, JSON.stringify(result.addresses), 'utf8');
+    getAddressFromMhWechat(url).then(({date, addresses}) => {
+        if (addresses) {
+            writeDailyAddressesToFile(date, addresses);
         }
     });
+}
+
+function writeDailyAddressesToFile(date, addresses) {
+    if (addresses) {
+        const dailyFeed = `${__dirname}/data/daily.json`;
+        // const dailySingleFeed = `${__dirname}/data/daily/${date}.json`;
+        const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
+        dailyData[date] = addresses;
+        fs.writeFileSync(dailyFeed, JSON.stringify(dailyData), 'utf8');
+        // fs.writeFileSync(dailySingleFeed, JSON.stringify(addresses), 'utf8');
+    }
 }
 
 /*
@@ -441,7 +447,7 @@ async function getAddressFromMhWechat(url) {
     // TODO: why document.title return ''?
     // const title = document.title;
     const title = $('#activity-name').text();
-    const match = title.match('(\\d+)月(\\d+)日闵行新增');
+    const match = title.match('(\\d+)月(\\d+)日闵行[区]?新增');
     if (!match) {
         console.log('文章不匹配， exit。');
         return null;
