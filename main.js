@@ -65,8 +65,9 @@ async function getNumByRegion(url) {
     var result = summary.match(summaryRegex);
     if (result) {
         // output summary data
-        console.log(['总数', result[1], result[2], result[3], result[4], result[5]].join(','));
+        console.log('总数:' + [result[1], result[2], result[3], result[4], result[5]].join(','));
     }
+    var regexDeath = /新增本土死亡(\d+)例/;
 
     /*
     无症状感染者1—无症状感染者3571，居住于浦东新区，
@@ -81,7 +82,6 @@ async function getNumByRegion(url) {
         // 本土病例情况
         // 本土无症状感染者情况
         var subjectTitle = $(item).find('section section:first').text().trim();
-        var type = null;
         var regex = null;
         var startIndex = 0;
         if (subjectTitle === '本土病例情况') {
@@ -146,6 +146,12 @@ async function getNumByRegion(url) {
                         }
                     });
                     tempData = {};
+                }
+
+
+                var deathResult = content.match(regexDeath);
+                if (deathResult && deathResult.length === 2) {
+                    console.log(`死亡:${deathResult[1]}`);
                 }
             }
         });
