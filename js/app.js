@@ -15,12 +15,16 @@ var fsm = new StateMachine({
     ],
     data: {
         debug: false,
-        selector: document.getElementById('dateSelector'),
+        selector: null,
         iid: null,
     },
     methods: {
         onInit: function () {
-            this.debug && console.log('onInit');
+            // A bug: this triggered after onIdle? no matter if I use `init: 'idle'` or transitions
+        },
+        onLeaveNone: function () {
+            this.debug && console.log('onLeaveNone');
+            this.selector = $('#dateSelector')[0];
             $('#playBtn').click(function(){
                 fsm.start();
             });
@@ -29,7 +33,7 @@ var fsm = new StateMachine({
             });
         },
         onIdle: function () {
-            this.debug && console.log('onInit');
+            this.debug && console.log('onIdle');
             $('#playBtn').show();
             $('#stopBtn').hide();
             this.selector.disabled = false;
@@ -63,3 +67,17 @@ var fsm = new StateMachine({
         },
     }
 });
+
+var dailyData = null;
+function fetchData(date, callback) {
+    if (dailyData === null) {
+        fetch(`data/daily.json`)
+            .then(response => response.json())
+            .then(json => {
+                dailyData = json;
+                callback(dailyData[date] || []);
+            });
+    } else {
+        callback(dailyData[date] || []);
+    }
+}

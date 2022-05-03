@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/javascript-state-machine@3.1.0/lib/state-machine.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/javascript-state-machine/3.1.0/state-machine.min.js" integrity="sha512-aRTzCISFnAu5pARm2OGMlbnraoL9F3aD86kY7QXr3roOI7hrHi5Xejz42wtTGrbUMrcXLRaOQZO9O3JTOB2dbg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="https://api.map.baidu.com/api?type=webgl&v=1.0&ak=FOghoenHAy69lWj3HgkVW5kz4IRgbQSi"></script>
-    <script type="text/javascript" src="util.js"></script>
-    <script type="text/javascript" src="map.js"></script>
+    <script type="text/javascript" src="js/util.js"></script>
+    <script type="text/javascript" src="js/map.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
     <script type="text/javascript" src="data/pointCache.js"></script>
     <script type="text/javascript" src="data/estateCache.js?20220407"></script>
     <title>上海疫情地图</title>
@@ -529,73 +530,6 @@
         } else {
             callback();
         }
-    }
-
-    var dailyData = null;
-
-    function fetchData(date, callback) {
-        if (dailyData === null) {
-            fetch(`data/daily.json`)
-                .then(response => response.json())
-                .then(json => {
-                    dailyData = json;
-                    callback(dailyData[date] || []);
-                });
-        } else {
-            callback(dailyData[date]);
-        }
-    }
-
-    // 根据小区Uid获取小区边界
-    function getPointsByUid(uid, callback) {
-        $.ajax({
-            async: false,
-            url: "https://map.baidu.com/?pcevaname=pc4.1&qt=ext&ext_ver=new&l=12&uid=" + uid,
-            dataType: 'jsonp',
-            jsonp: 'callback',
-            success: function (result) {
-                if (result.content.geo) {
-                    var geo = result.content.geo;
-                    var points = coordinateToPoints(geo);
-                    callback(points);
-                } else {
-                    callback(null);
-                }
-            },
-            timeout: 10000,
-        });
-    }
-
-    // 提取百度米坐标字符串，转为经纬度坐标数组
-    function coordinateToPoints(coordinate) {
-        var points = [];
-        if (coordinate) {
-            if (coordinate && coordinate.indexOf("-") >= 0) {
-                coordinate = coordinate.split('-');
-            }
-            //取点集合
-            var tempco = coordinate[1];
-            if (tempco && tempco.indexOf(",") >= 0) {
-                tempco = tempco.replace(";","").split(",");
-            }
-            //分割点，两个一组，组成百度米制坐标
-            var temppoints=[];
-            for(var i = 0, len = tempco.length; i < len; i++){
-                var obj = {};
-                obj.lng=tempco[i];
-                obj.lat=tempco[i+1];
-                temppoints.push(obj);
-                i++;
-            }
-            var projection = map.getProjection();
-            //遍历米制坐标，转换为经纬度
-            for ( var i = 0, len = temppoints.length; i < len; i++) {
-                var pos = temppoints[i];
-                var point = projection.pointToLngLat(new BMapGL.Pixel(pos.lng, pos.lat));
-                points.push([ point.lng, point.lat ].toString());
-            }
-        }
-        return points;
     }
 </script>
 </body>
