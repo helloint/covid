@@ -59,15 +59,15 @@ async function getNumByRegion(url) {
     新增本土新冠肺炎确诊病例1249和无症状感染者8932例，
     其中985例确诊病例为既往无症状感染者转归，
     264例确诊病例和8932例无症状感染者在隔离管控中发现。
+    新增本土新冠肺炎确诊病例261例和无症状感染者4390例，
+    其中185例确诊病例为既往无症状感染者转归，
+    75例确诊病例和4357例无症状感染者在隔离管控中发现。
      */
     var summary = $('#js_content section[data-id="106156"] p:first').text().trim();
-    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(，其余在相关风险人群排查中发现)?。/;
-    var result = summary.match(summaryRegex);
-    if (result) {
-        // output summary data
-        console.log('总数:' + [result[1], result[2], result[3], result[4], result[5]].join(','));
-    }
+    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(，其余在相关风险人群排查中发现)?。/;
+    var summaryResult = summary.match(summaryRegex);
     var regexDeath = /新增本土死亡(\d+)例/;
+    var deathResult = null;
 
     /*
     无症状感染者1—无症状感染者3571，居住于浦东新区，
@@ -148,14 +148,15 @@ async function getNumByRegion(url) {
                     tempData = {};
                 }
 
-
-                var deathResult = content.match(regexDeath);
-                if (deathResult && deathResult.length === 2) {
-                    console.log(`死亡:${deathResult[1]}`);
+                if (content.match(regexDeath)) {
+                    deathResult = content.match(regexDeath);
                 }
             }
         });
     });
+
+    var summaryData = [summaryResult[1], summaryResult[2], summaryResult[3], summaryResult[4], summaryResult[5], deathResult[1]];
+    console.log('总数:' + summaryData.join(','));
 
     const ret = [];
     regions.forEach((item, i) => {
