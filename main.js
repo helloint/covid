@@ -466,8 +466,9 @@ async function getAddressFromMhWechat(url) {
     console.log(`date: ${date}`);
 
     let areaName = '闵行区';
-    $('#js_content>section>section>section>p').each((index, item) => {
+    $('#js_content>section>section>section>section>p').each((index, item) => {
         let address = $(item).text().trim();
+        if (!address) return true;
         /*
         Samples:
         嘉定工业区陆渡村、草庵村、艾米公寓。
