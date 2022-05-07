@@ -28,11 +28,11 @@ async function main() {
             await getListPage();
         case 'daily':
             // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
-            getWechat(url);
+            getDailyFromWechat(url);
             break;
         case 'dailymh':
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650544187&idx=2&sn=70cd89bbfbd407a038dcf893dd7fc4ed&chksm=875e2d25b029a4339f5ee51bff2c616132f9e2ee1746ec04507b87e84e66619f07a55300487a&mpshare=1&scene=23&srcid=0427F3X92JT0J2iKGKDwMlcx&sharer_sharetime=1651025378365&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
-            getMhWechat(url);
+            getDailyMhFromWechat(url);
             break;
         case '3':
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
@@ -175,8 +175,6 @@ async function getNumByRegion(url) {
 async function getRegionStatusList(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
-    const {document} = window;
-    const addresses = [];
 
     const $ = jQuery = require('jquery')(window);
     var type = -1; // 0: 防范区; 1: 管控区; 2: 封控区;
@@ -197,9 +195,9 @@ async function getRegionStatusList(url) {
                 if (ret[type] === undefined) {
                     ret[type] = [];
                 }
-                var address = $(tr).find('td:eq(1)').text().trim();
+                var estateName = $(tr).find('td:eq(1)').text().trim();
                 count++;
-                ret[type].push('闵行区' + address);
+                ret[type].push(estateName);
             }
         });
     });
@@ -223,7 +221,7 @@ async function getListPage() {
     });
 }
 
-function getWechat(url) {
+function getDailyFromWechat(url) {
     getAddressFromWechat(url).then(({date, addresses}) => {
         if (addresses) {
             writeDailyAddressesToFile(date, addresses);
@@ -231,7 +229,7 @@ function getWechat(url) {
     });
 }
 
-function getMhWechat(url) {
+function getDailyMhFromWechat(url) {
     getAddressFromMhWechat(url).then(({date, addresses}) => {
         if (addresses) {
             writeDailyAddressesToFile(date, addresses);
@@ -381,12 +379,9 @@ async function getAddress(url) {
 async function getAddressFromWechat(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
-    const {document} = window;
     const addresses = [];
 
     const $ = jQuery = require('jquery')(window);
-    // TODO: why document.title return ''?
-    // const title = document.title;
     const title = $('#activity-name').text();
     const match = title.match('(\\d+)月(\\d+)日（0-24时）');
     if (!match) {
@@ -399,36 +394,19 @@ async function getAddressFromWechat(url) {
     const date = `2022-${month < 10 ? '0' : ''}${month}-${day < 10 ? '0' : ''}${day}`;
     console.log(`date: ${date}`);
 
-    let areaName = null;
+    let districtName = null;
     $('#js_content section[data-role=title],#js_content section[data-id="72469"]').each((index, item) => {
         if ($(item).attr('data-role') === 'title') {
-            areaName = $(item).find('section[data-brushtype="text"]').text();
+            districtName = $(item).find('section[data-brushtype="text"]').text();
         } else if ($(item).attr('data-id') === '72469') {
             $(item).find('section section[data-autoskip="1"] p').each((index, addressItem) => {
                 let address = $(addressItem).find('span').text();
-                if (!address.trim() || address.startsWith('2022年') || address.startsWith('已对相关居住地落实终末消毒措施')) {
-                    return true;
+                let results = parseAddress(address);
+                if (results) {
+                    results.forEach(item => {
+                        addresses.push(`${districtName}${item}`);
+                    });
                 }
-                address = address.trim();
-                /*
-                Samples:
-                嘉定工业区陆渡村、草庵村、艾米公寓。
-                窑墩村，
-                周祝公路35号。
-                 */
-                if (address.substr(-1) === '。' || address.substr(-1) === '，' || address.substr(-1) === '、') {
-                    address = address.substring(0, address.length - 1);
-                }
-
-                let results = [];
-                if (address.indexOf('、') > -1) {
-                    results = address.split('、');
-                } else {
-                    results = [address];
-                }
-                results.forEach(item => {
-                    addresses.push(`${areaName}${item}`);
-                });
             });
         } else {
             console.log('something wrong!');
@@ -447,12 +425,9 @@ async function getAddressFromWechat(url) {
 async function getAddressFromMhWechat(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
-    const {document} = window;
     const addresses = [];
 
     const $ = jQuery = require('jquery')(window);
-    // TODO: why document.title return ''?
-    // const title = document.title;
     const title = $('#activity-name').text();
     const match = title.match('(\\d+)月(\\d+)日闵行[区]?新增');
     if (!match) {
@@ -465,30 +440,15 @@ async function getAddressFromMhWechat(url) {
     const date = `2022-${month < 10 ? '0' : ''}${month}-${day < 10 ? '0' : ''}${day}`;
     console.log(`date: ${date}`);
 
-    let areaName = '闵行区';
-    $('#js_content>section>section>section>section>p').each((index, item) => {
+    let districtName = '闵行区';
+    $('#js_content>section>section>section>section>section>p').each((index, item) => {
         let address = $(item).text().trim();
-        if (!address) return true;
-        /*
-        Samples:
-        嘉定工业区陆渡村、草庵村、艾米公寓。
-        窑墩村，
-        周祝公路35号。
-         */
-        if (address.substr(-1) === '。' || address.substr(-1) === '，' || address.substr(-1) === '、') {
-            address = address.substring(0, address.length - 1);
+        let results = parseAddress(address);
+        if (results) {
+            results.forEach(item => {
+                addresses.push(`${districtName}${item}`);
+            });
         }
-
-        let results = [];
-        if (address.indexOf('、') > -1) {
-            results = address.split('、');
-        } else {
-            results = [address];
-        }
-        results.forEach(item => {
-            addresses.push(`${areaName}${item}`);
-        });
-
     });
 
     console.log(`addresses.length: ${addresses.length}`);
@@ -497,6 +457,32 @@ async function getAddressFromMhWechat(url) {
     return {
         date: date, addresses: addresses,
     };
+}
+
+function parseAddress(content) {
+    content = content && content.trim();
+    if (!content || content.startsWith('2022年') || content.startsWith('已对相关居住地')) {
+        return null;
+    }
+
+    let ret = [];
+    /*
+    Samples:
+    周祝公路35号。
+    窑墩村，
+    嘉定工业区陆渡村、草庵村、艾米公寓。
+     */
+    if (content.substr(-1) === '。' || content.substr(-1) === '，' || content.substr(-1) === '、') {
+        content = content.substring(0, content.length - 1);
+    }
+
+    if (content.indexOf('、') > -1) {
+        ret = content.split('、');
+    } else {
+        ret = [content];
+    }
+
+    return ret;
 }
 
 main();
