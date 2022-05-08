@@ -1,4 +1,64 @@
 /**
+ * 把地址转换成latlng坐标
+ * 调用了百度地图API实现的, 然后另外增加了一层缓存, 否则会影响画点的渲染速度
+ * @param address "永泰路630弄"
+ * @param callback {"lng":121.52411305537956,"lat":31.145365857319558}
+ */
+function getPoint(address, callback) {
+    if (pointCache.has(address)) {
+        callback(pointCache.get(address));
+    } else {
+        mapGeo.getPoint(address, (point) => {
+            pointCache.set(address, point);
+            callback(point);
+        }, "上海市");
+    }
+}
+
+function getBoundary(name, callback) {
+    initBoundaryData(() => {
+        if (boundaryCache.get(name) === undefined) {
+            mapBoundary.get(name, function (rs) {
+                callback(rs);
+                boundaryCache.set(name, rs);
+            });
+        } else {
+            callback(boundaryCache.get(name));
+        }
+    });
+}
+
+// TODO: wrap to a util function
+let boundaryCache = null;
+const boundaryDataRequestPool = [];
+let boundaryDataRequesting = false;
+function initBoundaryData(callback) {
+    if (boundaryCache == null) {
+        if (!boundaryDataRequesting) {
+            boundaryDataRequesting = true;
+            fetch(`data/boundaryCache.json`)
+                .then(response => response.json())
+                .then(json => {
+                    boundaryCache = new Map(json);
+                    callback();
+                    boundaryDataRequesting = false;
+
+                    if (boundaryDataRequestPool.length > 0) {
+                        while (boundaryDataRequestPool.length) {
+                            var request = boundaryDataRequestPool.pop();
+                            request && request();
+                        }
+                    }
+                });
+        } else {
+            boundaryDataRequestPool.push(callback);
+        }
+    } else {
+        callback();
+    }
+}
+
+/**
  * 根据小区Uid获取小区边界
  * Deps: jQuery, coordinateToPoints
  * @param uid
