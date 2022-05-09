@@ -90,8 +90,6 @@
     });
 
     function render() {
-        // "闵行区七宝村（七宝村散区）" 这个要去掉
-        // renderRegionStatus();
         renderUI();
     }
 
@@ -245,7 +243,13 @@
                     isUnblocked ? marker.setIcon(unblockIcon) : marker.setIcon(covidIcon);
             }
             var label = new BMapGL.Label(labelTitle, {offset: new BMapGL.Size(...labelOffset)});
-            label.setStyle(isUnblocked ? unblockLabelStyle : defaultLabelStyle);
+            var labelStyle = defaultLabelStyle;
+            if (isUnblocked) {
+                labelStyle = unblockLabelStyle;
+            } else if (type !== -1) {
+                labelStyle = $.extend({}, defaultLabelStyle, {borderColor: eval('color' + type)});
+            }
+            label.setStyle(labelStyle);
             !isLabelDisplay && label.hide();
             marker.setLabel(label);
             isUnblocked && marker.disableMassClear();

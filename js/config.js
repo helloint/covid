@@ -53,9 +53,12 @@ const estateAliasMap = {
 const iconType0 = new BMapGL.Icon('images/ic_release.svg', new BMapGL.Size(16, 16));
 const iconType1 = new BMapGL.Icon('images/ic_protection.svg', new BMapGL.Size(16, 16));
 const iconType2 = new BMapGL.Icon('images/ic_locked.svg', new BMapGL.Size(16, 16));
-const regionPolygonOptions0 = {strokeWeight: 1, fillColor: '#6bdab4', fillOpacity: 1};
-const regionPolygonOptions1 = {strokeWeight: 1, fillColor: '#fdc368', fillOpacity: 1};
-const regionPolygonOptions2 = {strokeWeight: 1, fillColor: '#e47d7e', fillOpacity: 1};
+const color0 = '#6bdab4';
+const color1 = '#fdc368';
+const color2 = '#e47d7e';
+const regionPolygonOptions0 = {strokeWeight: 1, fillColor: color0, fillOpacity: 1};
+const regionPolygonOptions1 = {strokeWeight: 1, fillColor: color1, fillOpacity: 1};
+const regionPolygonOptions2 = {strokeWeight: 1, fillColor: color2, fillOpacity: 1};
 
 const covidIcon = new BMapGL.Icon('images/covid.svg', new BMapGL.Size(15, 15));
 const unblockIcon = new BMapGL.Icon('images/smile.png', new BMapGL.Size(15, 15));
