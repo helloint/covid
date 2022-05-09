@@ -90,7 +90,8 @@
     });
 
     function render() {
-        renderUI();
+        var mode = getHashParameter("mode");
+        mode === '1' ? renderRegionStatus() : renderUI();
     }
 
     function initMap() {
@@ -134,23 +135,37 @@
             // Review: Better to monitor data flow not hash change
             render();
         });
+
         $('#dateSelector').change(function (e) {
             setHashParameter('date', e.target.value);
         });
+        if (getHashParameter('date')) {
+            $('#dateSelector').val(getHashParameter('date'));
+        }
+
         $('#keepData').change(function (e) {
-            // FIXME: handle deeplink
             !$(this).is(':checked') && map.clearOverlays();
             setHashParameter('keep', $(this).is(':checked') ? 1 : 0);
         });
+        if (getHashParameter('keep')) {
+            $('#keepData').attr("checked", true);
+        }
+
         $('#mapMode').change(function (e) {
-            $(this).is(':checked') ? renderRegionStatus() : renderUI();
-            // setHashParameter('mode', $(this).is(':checked') ? 1 : 0);
+            setHashParameter('mode', $(this).is(':checked') ? 1 : 0);
         });
+        if (getHashParameter('mode')) {
+            $('#mapMode').attr("checked", true);
+        }
 
         $('#showEstateBoundary').change(function (e) {
             // FIXME: handle deeplink
             setHashParameter('estate', $(this).is(':checked') ? 1 : 0);
         });
+        if (getHashParameter('estate')) {
+            $('#showEstateBoundary').attr("checked", true);
+        }
+
         $('#districtSelector').change(function (e) {
             getPoint(e.target.value, function(point){
                 if (point) {
