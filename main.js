@@ -441,7 +441,8 @@ async function getAddressFromMhWechat(url) {
     console.log(`date: ${date}`);
 
     let districtName = '闵行区';
-    $('#js_content>section>section>section>section>section>p').each((index, item) => {
+    // the topic content structure changes frequently……
+    $('#js_content>section>section>section>section>section>section').each((index, item) => {
         let address = $(item).text().trim();
         let results = parseAddress(address);
         if (results) {
