@@ -71,7 +71,7 @@ var fsm = new StateMachine({
 var dailyData = null;
 function fetchData(date, callback) {
     if (dailyData === null) {
-        fetch(`data/daily.json`)
+        fetch(`data/addressTotal.json`)
             .then(response => response.json())
             .then(json => {
                 dailyData = json;

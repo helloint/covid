@@ -55,6 +55,11 @@ async function getNumByRegion(url) {
     var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
 
     var summary = $('#js_content section[data-id="106156"] p:first').text().trim();
+    var dateRegex = /(\d{4})年(\d)+月(\d)+日/;
+    var dateResult = summary.match(dateRegex);
+    console.log(dateResult);
+    var date = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
+    var data = {};
     /*
     Template:
     新增本土新冠肺炎确诊病例1249和无症状感染者8932例，其中985例确诊病例为既往无症状感染者转归，264例确诊病例和8932例无症状感染者在隔离管控中发现。
@@ -157,19 +162,68 @@ async function getNumByRegion(url) {
 
     var summaryData = [summaryResult[1], summaryResult[2], summaryResult[3], summaryResult[4], summaryResult[5], deathResult[1]];
     console.log('总数:' + summaryData.join(','));
+    data.daily = {
+        "total": parseInt(summaryResult[1], 10) + parseInt(summaryResult[2], 10),
+        "confirm": parseInt(summaryResult[1], 10),
+        "wzz": parseInt(summaryResult[2], 10),
+        "zhuangui": parseInt(summaryResult[3], 10),
+        "confirm_bihuan": parseInt(summaryResult[4], 10),
+        "wzz_bihuan": parseInt(summaryResult[5], 10),
+        "death": parseInt(deathResult[1], 10),
+        "confirm_shaicha": parseInt(summaryResult[1], 10) - parseInt(summaryResult[3], 10) - parseInt(summaryResult[4], 10),
+        "wzz_shaicha": parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10)
+    };
 
     const ret = [];
     regions.forEach((item, i) => {
         if (regionData[item]) {
             ret.push([item, ...regionData[item]]);
         } else {
-            ret.push([item, 0, 0]);
+            ret.push([item, 0, 0, 0, 0, 0]);
         }
     });
+    data.regions = [];
     ret.forEach((item, i) => {
         // output the log into Excel
         console.log(item.join(','));
+        data.regions.push(
+            {
+                "region": item[0],
+                "total": item[1] + item[2] + item[3] + item[4] + item[5],
+                "confirm": item[1] + item[2]+ item[3],
+                "wzz": item[4] + item[5],
+                "zhuangui": item[2],
+                "confirm_bihuan": item[1],
+                "wzz_bihuan": item[4],
+                "confirm_shaicha": item[3],
+                "wzz_shaicha": item[5]
+            }
+        );
     });
+
+    const dailyFeed = `${__dirname}/data/daily.json`;
+    const dailyTotalFeed = `${__dirname}/data/dailyTotal.json`;
+    const dailyTotalData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
+    data.date = parseDate(date);
+    dailyTotalData.daily[data.date] = {
+        "confirm": data.daily.confirm,
+        "wzz": data.daily.wzz,
+        "death": data.daily.death
+    };
+    var total = {
+        confirm: 0,
+        wzz: 0,
+        death: 0
+    };
+    Object.entries(dailyTotalData.daily).forEach(([key, value]) => {
+        total.confirm = total.confirm + value.confirm;
+        total.wzz = total.wzz + value.wzz;
+        total.death = total.death + value.death;
+    });
+    dailyTotalData.total = total;
+    data.total = total;
+    fs.writeFileSync(dailyTotalFeed, JSON.stringify(dailyTotalData), 'utf8');
+    fs.writeFileSync(dailyFeed, JSON.stringify(data), 'utf8');
 }
 
 async function getRegionStatusList(url) {
@@ -239,12 +293,12 @@ function getDailyMhFromWechat(url) {
 
 function writeDailyAddressesToFile(date, addresses) {
     if (addresses) {
-        const dailyFeed = `${__dirname}/data/daily.json`;
-        // const dailySingleFeed = `${__dirname}/data/daily/${date}.json`;
-        const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
+        const dailyTotalFeed = `${__dirname}/data/addressTotal.json`;
+        const dailyData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
         dailyData[date] = addresses;
-        fs.writeFileSync(dailyFeed, JSON.stringify(dailyData), 'utf8');
-        // fs.writeFileSync(dailySingleFeed, JSON.stringify(addresses), 'utf8');
+        fs.writeFileSync(dailyTotalFeed, JSON.stringify(dailyData), 'utf8');
+        const dailyFeed = `${__dirname}/data/address.json`;
+        fs.writeFileSync(dailyFeed, JSON.stringify(addresses), 'utf8');
     }
 }
 
@@ -491,6 +545,15 @@ function parseAddress(content) {
     }
 
     return ret;
+}
+
+function parseDate(date) {
+    var yyyy = date.getFullYear();
+    var mm = date.getMonth() + 1;
+    mm = mm >= 10 ? mm : '0' + mm;
+    var dd = date.getDate();
+    dd = dd >= 10 ? dd : '0' + dd;
+    return `${yyyy}-${mm}-${dd}`;
 }
 
 main();
