@@ -54,19 +54,19 @@ async function getNumByRegion(url) {
     const $ = jQuery = require('jquery')(window);
     var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
 
-    /*
-    Summary Template:
-    新增本土新冠肺炎确诊病例1249和无症状感染者8932例，
-    其中985例确诊病例为既往无症状感染者转归，
-    264例确诊病例和8932例无症状感染者在隔离管控中发现。
-    新增本土新冠肺炎确诊病例261例和无症状感染者4390例，
-    其中185例确诊病例为既往无症状感染者转归，
-    75例确诊病例和4357例无症状感染者在隔离管控中发现。
-     */
     var summary = $('#js_content section[data-id="106156"] p:first').text().trim();
+    /*
+    Template:
+    新增本土新冠肺炎确诊病例1249和无症状感染者8932例，其中985例确诊病例为既往无症状感染者转归，264例确诊病例和8932例无症状感染者在隔离管控中发现。
+     */
     var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(，其余在相关风险人群排查中发现)?。/;
     var summaryResult = summary.match(summaryRegex);
-    var regexDeath = /新增本土死亡(\d+)例/;
+    /*
+    Template:
+    新增本土死亡11例。
+    新增本土死亡病例6例。
+     */
+    var regexDeath = /新增本土死亡(?:病例)?(\d+)例/;
     var deathResult = null;
 
     /*
@@ -441,8 +441,15 @@ async function getAddressFromMhWechat(url) {
     console.log(`date: ${date}`);
 
     let districtName = '闵行区';
-    // the topic content structure changes frequently……
-    $('#js_content>section>section>section>section>section>section').each((index, item) => {
+    // '已对相关居住地落实终末消毒措施等。'
+    var $item = null;
+    $('#js_content section, #js_content p').each((index, item) => {
+        if ($(item).text().trim() === '已对相关居住地落实终末消毒措施等。') {
+            $item = $(item);
+            return false;
+        }
+    });
+    $item.siblings().each((index, item) => {
         let address = $(item).text().trim();
         let results = parseAddress(address);
         if (results) {
