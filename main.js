@@ -19,6 +19,7 @@
 const fs = require('fs');
 const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
+const config = require('./config.js');
 
 async function main() {
     var type = process.argv.slice(2)[0];
@@ -26,6 +27,10 @@ async function main() {
     switch(type) {
         case 'list':
             await getListPage();
+            break;
+        case 'shfb':
+            await getDailyTopicFromSHFB();
+            break;
         case 'daily':
             // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
             getDailyFromWechat(url);
@@ -45,6 +50,72 @@ async function main() {
         default:
             console.log('No match type.');
     }
+}
+
+async function getDailyTopicFromSHFB() {
+    const url = 'https://mp.weixin.qq.com/cgi-bin/appmsg';
+    const queryData = {
+        action: 'list_ex',
+        begin: 0,
+        count: 5,
+        fakeid: config.fakeid, // 公众号的唯一标识
+        type: 9,
+        query: '',
+        token: config.token,
+        lang: 'zh_CN',
+        f: 'json',
+        ajax: 1
+    };
+
+    const headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36",
+        "cookie": config.cookie,
+    }
+
+    const axios = require('axios');
+    await axios.get(url, {params: queryData, headers: headers})
+        .then(function (response) {
+            if (response.data && response.data.app_msg_list) {
+                const docList = filterTodayDoc(response.data.app_msg_list);
+                if (docList && docList.length > 0) {
+                    return docList.map((item) => {
+                        // Get day of doc, for example:
+                        const day = getDayOfDoc(item.title);
+                        console.log(`day: ${day}`);
+                        console.log(`title: ${item.title}\nlink: ${item.link}`);
+                        return {day: day, ...item};
+                    })[0];
+                }
+            }
+        })
+        .catch(error => {
+            console.log('error', error);
+        });
+}
+
+function getDayOfDoc(docTitle) {
+    const regex = /(\d+)月(\d+)日（0-24时）上海新增本土确诊病例/;
+    const dayArry = docTitle.match(regex);
+    var dayMonth = '00' + dayArry[1];
+    dayMonth = dayMonth.substr(dayMonth.length - 2, 2);
+    var dayDay = '00' + dayArry[2];
+    dayDay = dayDay.substr(dayDay.length - 2, 2);
+    return dayMonth + dayDay;
+}
+
+function filterTodayDoc(docs) {
+    const doc = (docs || []).map((item) => {
+        const {title, link} = item;
+        return {title, link};
+    }).filter((item) => {
+        // console.log(`title: ${item.title}\nlink: ${item.link}`);
+        const regex = /(\d+)月(\d+)日（0-24时）上海新增本土确诊病例/;
+        const res = item.title.match(regex);
+        if (res && res.length === 3) {
+            return true;
+        }
+    });
+    return doc;
 }
 
 async function getNumByRegion(url) {
