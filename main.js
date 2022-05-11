@@ -39,7 +39,7 @@ async function main() {
             getRegionStatusList(url);
             break;
         case 'num':
-            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654530350&idx=1&sn=fa9dc80ae6d99baad6ca0299c5f87029&chksm=bd31f6558a467f435267bac04a11866d5e5c2fe28b0b8e013396e838018d23c4e80ae5c54a1c&mpshare=1&scene=23&srcid=0428EWMT2eYoWpbSoM4x5yky&sharer_sharetime=1651103424781&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654535437&idx=1&sn=6ca56371851bc62a30d97489fab910a8&chksm=bd31e2768a466b60a855883b3e1214115c2901772ca3110c9354345623b0c5033397322d4baf&mpshare=1&scene=23&srcid=0511pP3BjP8oceLhYPt3N5hA&sharer_sharetime=1652226557950&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             getNumByRegion(url);
             break;
         default:
@@ -54,8 +54,8 @@ async function getNumByRegion(url) {
     const $ = jQuery = require('jquery')(window);
     var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
 
-    var summary = $('#js_content section[data-id="106156"] p:first').text().trim();
-    var dateRegex = /(\d{4})年(\d)+月(\d)+日/;
+    var summary = $('#js_content section[data-id="106156"] strong:first').text().trim();
+    var dateRegex = /(\d{4})年(\d+)月(\d+)日/;
     var dateResult = summary.match(dateRegex);
     console.log(dateResult);
     var date = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
@@ -111,7 +111,7 @@ async function getNumByRegion(url) {
         4 风险排查无症状 66
          */
         var tempData = {};
-        $(item).find('section section p').each((j, row) => {
+        $(item).find('section section p, section section section').each((j, row) => {
             var content = $(row).text().trim();
             if (content) {
                 var count = 0;
