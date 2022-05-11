@@ -171,7 +171,9 @@ async function getNumByRegion(url) {
         "wzz_bihuan": parseInt(summaryResult[5], 10),
         "death": parseInt(deathResult[1], 10),
         "confirm_shaicha": parseInt(summaryResult[1], 10) - parseInt(summaryResult[3], 10) - parseInt(summaryResult[4], 10),
-        "wzz_shaicha": parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10)
+        "wzz_shaicha": parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10),
+        "bihuan": parseInt(summaryResult[4], 10) + parseInt(summaryResult[5], 10),
+        "shaicha": parseInt(summaryResult[1], 10) - parseInt(summaryResult[3], 10) - parseInt(summaryResult[4], 10) + parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10),
     };
 
     const ret = [];
@@ -196,7 +198,9 @@ async function getNumByRegion(url) {
                 "confirm_bihuan": item[1],
                 "wzz_bihuan": item[4],
                 "confirm_shaicha": item[3],
-                "wzz_shaicha": item[5]
+                "wzz_shaicha": item[5],
+                "bihuan": item[1] + item[4],
+                "shaicha": item[3] + item[5],
             }
         );
     });
@@ -205,23 +209,19 @@ async function getNumByRegion(url) {
     const dailyTotalFeed = `${__dirname}/data/dailyTotal.json`;
     const dailyTotalData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
     data.date = parseDate(date);
-    dailyTotalData.daily[data.date] = {
-        "confirm": data.daily.confirm,
-        "wzz": data.daily.wzz,
-        "death": data.daily.death
-    };
-    var total = {
+    dailyTotalData.daily[data.date] = data.daily;
+    var totalNums = {
         confirm: 0,
         wzz: 0,
         death: 0
     };
     Object.entries(dailyTotalData.daily).forEach(([key, value]) => {
-        total.confirm = total.confirm + value.confirm;
-        total.wzz = total.wzz + value.wzz;
-        total.death = total.death + value.death;
+        totalNums.confirm = totalNums.confirm + value.confirm;
+        totalNums.wzz = totalNums.wzz + value.wzz;
+        totalNums.death = totalNums.death + value.death;
     });
-    dailyTotalData.total = total;
-    data.total = total;
+    dailyTotalData.total = totalNums;
+    data.total = totalNums;
     fs.writeFileSync(dailyTotalFeed, JSON.stringify(dailyTotalData), 'utf8');
     fs.writeFileSync(dailyFeed, JSON.stringify(data), 'utf8');
 }
@@ -262,7 +262,7 @@ async function getRegionStatusList(url) {
 
 async function getListPage() {
     const fromDate = new Date('2022-03-01 00:00:00').getTime();
-    const result = await getTopicsFromWsjListPages(1);
+    const result = await getTopicsFromWsjListPages(5);
     const ret = result.filter((item) => {
         const itemDate = new Date(item[0]).getTime();
         return itemDate >= fromDate;
