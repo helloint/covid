@@ -26,56 +26,91 @@ async function main() {
     var url = process.argv.slice(2)[1];
     switch (type) {
         case 'run' :
-            // TODO
-            // await run();
+            await run();
             break;
-        case 'runNum' :
-            await runNum();
+        case 'daily':
+            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654535437&idx=1&sn=6ca56371851bc62a30d97489fab910a8&chksm=bd31e2768a466b60a855883b3e1214115c2901772ca3110c9354345623b0c5033397322d4baf&mpshare=1&scene=23&srcid=0511pP3BjP8oceLhYPt3N5hA&sharer_sharetime=1652226557950&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            await processDailyData(url);
             break;
-        case 'runAddress' :
-            // TODO
-            // await runNum();
+        case 'address':
+            // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
+            processAddressFromWechat(url);
+            break;
+        case 'addressmh':
+            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650544187&idx=2&sn=70cd89bbfbd407a038dcf893dd7fc4ed&chksm=875e2d25b029a4339f5ee51bff2c616132f9e2ee1746ec04507b87e84e66619f07a55300487a&mpshare=1&scene=23&srcid=0427F3X92JT0J2iKGKDwMlcx&sharer_sharetime=1651025378365&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            processAddressFromWechatMh(url);
+            break;
+        case '3':
+            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            await getRegionStatusList(url);
             break;
         case 'list':
             await getListPage();
             break;
         case 'shfb':
-            await getDailyTopicFromSHFB();
-            break;
-        case 'daily':
-            // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
-            getDailyFromWechat(url);
-            break;
-        case 'dailymh':
-            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650544187&idx=2&sn=70cd89bbfbd407a038dcf893dd7fc4ed&chksm=875e2d25b029a4339f5ee51bff2c616132f9e2ee1746ec04507b87e84e66619f07a55300487a&mpshare=1&scene=23&srcid=0427F3X92JT0J2iKGKDwMlcx&sharer_sharetime=1651025378365&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
-            getDailyMhFromWechat(url);
-            break;
-        case '3':
-            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
-            getRegionStatusList(url);
-            break;
-        case 'num':
-            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654535437&idx=1&sn=6ca56371851bc62a30d97489fab910a8&chksm=bd31e2768a466b60a855883b3e1214115c2901772ca3110c9354345623b0c5033397322d4baf&mpshare=1&scene=23&srcid=0511pP3BjP8oceLhYPt3N5hA&sharer_sharetime=1652226557950&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
-            getNumByRegion(url);
+            await getLatestTopicsFromSHFB();
             break;
         default:
-            // await runNum();
-            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654535734&idx=1&sn=0c3ef7eb6159a1dc224d3be437338dca&chksm=bd301d4d8a47945b18c3e7d8458d7e58510b7499c246089a34623ee9b10ef132f775e1319007#rd';
-            // getNumByRegion(url);
             console.log('No match type.');
     }
 }
 
-async function runNum() {
-    var topic = await getDailyTopicFromSHFB();
-    if (topic) {
-        getNumByRegion(topic.link);
+async function run() {
+    const date = parseDate(new Date((new Date()).valueOf() - 1000 * 60 * 60 * 24));
+    const dailyFeed = `${__dirname}/data/daily.json`;
+    const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
+    const addressFeed = `${__dirname}/data/address.json`;
+    const addressData = JSON.parse(fs.readFileSync(addressFeed, 'utf8'));
+
+    if (dailyData.date === date && addressData.date === date) {
+        console.log('Today data already generated. Quit!');
+        return;
+    }
+
+    var topics = await getLatestTopicsFromSHFB();
+    if (topics) {
+        let topic = null;
+        if (dailyData.date !== date) {
+            topic = topics.find((item) => {
+                const regex = /(\d+)月(\d+)日（0-24时）上海新增本土确诊病例/;
+                const res = item.title.match(regex);
+                if (res && res.length === 3) {
+                    return true;
+                }
+            });
+            if (topic) {
+                console.log('processing daily data...');
+                await processDailyData(topic.url);
+            } else {
+                console.log('Daily topic not ready.');
+            }
+        }
+
+        if (addressData.date !== date) {
+            topic = topics.find((item) => {
+                // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
+                const regex = /(\d+)月(\d+)日（0-24时）本市各区确诊病例、无症状感染者居住地信息/;
+                const res = item.title.match(regex);
+                if (res && res.length === 3) {
+                    return true;
+                }
+            });
+            if (topic) {
+                console.log('processing address data...');
+                await processAddressFromWechat(topic.url);
+            } else {
+                console.log('Address topic not ready.');
+            }
+        }
     } else {
-        console.log('Topic not ready.');
+        console.log('No Topics.');
     }
 }
 
-async function getDailyTopicFromSHFB() {
+/**
+ * This will return latest 11 topics from 上海发布 wechat public account
+ */
+async function getLatestTopicsFromSHFB() {
     const url = 'https://mp.weixin.qq.com/cgi-bin/appmsg';
     const queryData = {
         action: 'list_ex',
@@ -89,56 +124,29 @@ async function getDailyTopicFromSHFB() {
         f: 'json',
         ajax: 1
     };
-
     const headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36",
         "cookie": config.cookie,
     }
-
     const axios = require('axios');
     const response = await axios.get(url, {params: queryData, headers: headers});
     if (response.status === 200) {
         if (response.data && response.data.app_msg_list) {
-            const docList = filterTodayDoc(response.data.app_msg_list);
-            if (docList && docList.length > 0) {
-                return docList[0];
-            }
-            console.log(`No topic found.`);
+            const ret = response.data.app_msg_list.map((item) => {
+                return {title: item.title, url: item.link};
+            });
+            return ret;
         } else {
             console.log(`No 'app_msg_list' found.`);
+            return null;
         }
-    } else {
-        console.log(`error ${response.status}`);
     }
+
+    console.log(`error ${response.status}`);
     return null;
 }
 
-function getDayOfDoc(docTitle) {
-    const regex = /(\d+)月(\d+)日（0-24时）上海新增本土确诊病例/;
-    const dayArry = docTitle.match(regex);
-    var dayMonth = '00' + dayArry[1];
-    dayMonth = dayMonth.substr(dayMonth.length - 2, 2);
-    var dayDay = '00' + dayArry[2];
-    dayDay = dayDay.substr(dayDay.length - 2, 2);
-    return dayMonth + dayDay;
-}
-
-function filterTodayDoc(docs) {
-    const doc = (docs || []).map((item) => {
-        const {title, link} = item;
-        return {title, link};
-    }).filter((item) => {
-        // console.log(`title: ${item.title}\nlink: ${item.link}`);
-        const regex = /(\d+)月(\d+)日（0-24时）上海新增本土确诊病例/;
-        const res = item.title.match(regex);
-        if (res && res.length === 3) {
-            return true;
-        }
-    });
-    return doc;
-}
-
-async function getNumByRegion(url) {
+async function processDailyData(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const regionData = {};
@@ -365,7 +373,7 @@ async function getListPage() {
     });
 }
 
-function getDailyFromWechat(url) {
+function processAddressFromWechat(url) {
     getAddressFromWechat(url).then(({date, addresses}) => {
         if (addresses) {
             writeDailyAddressesToFile(date, addresses);
@@ -373,8 +381,8 @@ function getDailyFromWechat(url) {
     });
 }
 
-function getDailyMhFromWechat(url) {
-    getAddressFromMhWechat(url).then(({date, addresses}) => {
+function processAddressFromWechatMh(url) {
+    getAddressFromWechatMh(url).then(({date, addresses}) => {
         if (addresses) {
             writeDailyAddressesToFile(date, addresses);
         }
@@ -388,7 +396,7 @@ function writeDailyAddressesToFile(date, addresses) {
         dailyData[date] = addresses;
         fs.writeFileSync(dailyTotalFeed, JSON.stringify(dailyData), 'utf8');
         const dailyFeed = `${__dirname}/data/address.json`;
-        fs.writeFileSync(dailyFeed, JSON.stringify(addresses), 'utf8');
+        fs.writeFileSync(dailyFeed, JSON.stringify({date, addresses}), 'utf8');
     }
 }
 
@@ -566,7 +574,7 @@ async function getAddressFromWechat(url) {
 }
 
 // 从闵行微信公众号获取区级数据。
-async function getAddressFromMhWechat(url) {
+async function getAddressFromWechatMh(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const addresses = [];
