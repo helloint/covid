@@ -1,14 +1,7 @@
 name: Process Data
 on:
   schedule:
-    - cron:  '0/1 7-12 * * *'
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch / CommitID / Tag'
-        required: true
-        default: 'master'
-        type: string
+    - cron:  '0/5 7-12 * * *'
 
 jobs:
   build:
