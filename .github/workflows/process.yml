@@ -1,7 +1,14 @@
 name: Process Data
 on:
   schedule:
-    - cron:  '0/5 7-12 * * *'
+    - cron:  '0/1 7-12 * * *'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch / CommitID / Tag'
+        required: true
+        default: 'master'
+        type: string
 
 jobs:
   build:
@@ -30,5 +37,14 @@ jobs:
           git config --global user.name 'Wayne Mao'
           git config --global user.email 'helloint@qq.com'
           git add ./data/*
-          git commit -am "Automated data"
-          git push
+          set +e
+          git status | grep modified
+          if [ $? -eq 0 ]
+          then
+              set -e
+              git commit -am "Automated data process"
+              git push
+          else
+              set -e
+              echo "No changes since last run"
+          fi
