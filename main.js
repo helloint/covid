@@ -24,7 +24,10 @@ const config = require('./config.js');
 async function main() {
     var type = process.argv.slice(2)[0];
     var url = process.argv.slice(2)[1];
-    switch(type) {
+    switch (type) {
+        case 'runNum' :
+            await runNum();
+            break;
         case 'list':
             await getListPage();
             break;
@@ -48,7 +51,19 @@ async function main() {
             getNumByRegion(url);
             break;
         default:
+            // await run();
+            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654535734&idx=1&sn=0c3ef7eb6159a1dc224d3be437338dca&chksm=bd301d4d8a47945b18c3e7d8458d7e58510b7499c246089a34623ee9b10ef132f775e1319007#rd';
+            // getNumByRegion(url);
             console.log('No match type.');
+    }
+}
+
+async function runNum() {
+    var topic = await getDailyTopicFromSHFB();
+    if (topic) {
+        getDailyFromWechat(topic.link);
+    } else {
+        console.log('Not ready.');
     }
 }
 
@@ -79,13 +94,14 @@ async function getDailyTopicFromSHFB() {
                 const docList = filterTodayDoc(response.data.app_msg_list);
                 if (docList && docList.length > 0) {
                     return docList.map((item) => {
-                        // Get day of doc, for example:
-                        const day = getDayOfDoc(item.title);
-                        console.log(`day: ${day}`);
                         console.log(`title: ${item.title}\nlink: ${item.link}`);
-                        return {day: day, ...item};
+                        return item;
                     })[0];
                 }
+                console.log(`No topic found.`);
+            } else {
+                console.log(`No 'app_msg_list' found.`);
+                return null;
             }
         })
         .catch(error => {
@@ -123,9 +139,9 @@ async function getNumByRegion(url) {
     const {window} = dom;
     const regionData = {};
     const $ = jQuery = require('jquery')(window);
-    var regions = ['浦东新区','黄浦区','静安区','徐汇区','长宁区','虹口区','杨浦区','普陀区','闵行区','宝山区','嘉定区','金山区','松江区','青浦区','奉贤区','崇明区'];
+    var regions = ['浦东新区', '黄浦区', '静安区', '徐汇区', '长宁区', '虹口区', '杨浦区', '普陀区', '闵行区', '宝山区', '嘉定区', '金山区', '松江区', '青浦区', '奉贤区', '崇明区'];
 
-    var summary = $('#js_content section[data-id="106156"] strong:first').text().trim();
+    var summary = $('#js_content section[data-id="106156"] span:first').text().trim();
     var dateRegex = /(\d{4})年(\d+)月(\d+)日/;
     var dateResult = summary.match(dateRegex);
     console.log(dateResult);
@@ -154,7 +170,7 @@ async function getNumByRegion(url) {
     在风险人群筛查中发现新冠病毒核酸检测结果异常，即被隔离管控。
     为此前报告的本土无症状感染者
      */
-    $('#js_content section[data-id="109677"]').each((i, item)=>{
+    $('#js_content section[data-id="109677"]').each((i, item) => {
         // 本土病例情况
         // 本土无症状感染者情况
         var subjectTitle = $(item).find('section section:first').text().trim();
@@ -215,7 +231,7 @@ async function getNumByRegion(url) {
                 if (sectionEnded) {
                     regions.forEach((region, i) => {
                         if (!regionData[region]) {
-                            regionData[region] = [0,0,0,0,0];
+                            regionData[region] = [0, 0, 0, 0, 0];
                         }
                         if (tempData[region]) {
                             regionData[region][startIndex + indexOffset] = tempData[region];
@@ -263,7 +279,7 @@ async function getNumByRegion(url) {
             {
                 "region": item[0],
                 "total": item[1] + item[2] + item[3] + item[4] + item[5],
-                "confirm": item[1] + item[2]+ item[3],
+                "confirm": item[1] + item[2] + item[3],
                 "wzz": item[4] + item[5],
                 "zhuangui": item[2],
                 "confirm_bihuan": item[1],
@@ -381,7 +397,7 @@ async function getTopicsFromWsjListPages(maxPageNum) {
         // if (pageNum === 0) return 'https://wsjkw.sh.gov.cn/xwfb/index.html';
         // else return `https://wsjkw.sh.gov.cn/xwfb/index_${pageNum+1}.html`;
         // 官网列表页，从第10页开始数据丢失，只能改用搜索页的数据
-        return `https://ss.shanghai.gov.cn/search?page=${pageNum+1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
+        return `https://ss.shanghai.gov.cn/search?page=${pageNum + 1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
     }
     const ret = [];
     let i = 0;
