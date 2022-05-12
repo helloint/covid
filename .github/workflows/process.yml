@@ -1,7 +1,7 @@
 name: Process Data
 on:
   schedule:
-    - cron:  '0/1 7-12 * * *'
+    - cron: '*/5 7-12 * * *'
   workflow_dispatch:
     inputs:
       branch:
