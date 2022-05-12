@@ -25,8 +25,16 @@ async function main() {
     var type = process.argv.slice(2)[0];
     var url = process.argv.slice(2)[1];
     switch (type) {
+        case 'run' :
+            // TODO
+            // await run();
+            break;
         case 'runNum' :
             await runNum();
+            break;
+        case 'runAddress' :
+            // TODO
+            // await runNum();
             break;
         case 'list':
             await getListPage();
@@ -51,7 +59,7 @@ async function main() {
             getNumByRegion(url);
             break;
         default:
-            // await run();
+            // await runNum();
             // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654535734&idx=1&sn=0c3ef7eb6159a1dc224d3be437338dca&chksm=bd301d4d8a47945b18c3e7d8458d7e58510b7499c246089a34623ee9b10ef132f775e1319007#rd';
             // getNumByRegion(url);
             console.log('No match type.');
@@ -61,9 +69,9 @@ async function main() {
 async function runNum() {
     var topic = await getDailyTopicFromSHFB();
     if (topic) {
-        getDailyFromWechat(topic.link);
+        getNumByRegion(topic.link);
     } else {
-        console.log('Not ready.');
+        console.log('Topic not ready.');
     }
 }
 
@@ -88,25 +96,21 @@ async function getDailyTopicFromSHFB() {
     }
 
     const axios = require('axios');
-    await axios.get(url, {params: queryData, headers: headers})
-        .then(function (response) {
-            if (response.data && response.data.app_msg_list) {
-                const docList = filterTodayDoc(response.data.app_msg_list);
-                if (docList && docList.length > 0) {
-                    return docList.map((item) => {
-                        console.log(`title: ${item.title}\nlink: ${item.link}`);
-                        return item;
-                    })[0];
-                }
-                console.log(`No topic found.`);
-            } else {
-                console.log(`No 'app_msg_list' found.`);
-                return null;
+    const response = await axios.get(url, {params: queryData, headers: headers});
+    if (response.status === 200) {
+        if (response.data && response.data.app_msg_list) {
+            const docList = filterTodayDoc(response.data.app_msg_list);
+            if (docList && docList.length > 0) {
+                return docList[0];
             }
-        })
-        .catch(error => {
-            console.log('error', error);
-        });
+            console.log(`No topic found.`);
+        } else {
+            console.log(`No 'app_msg_list' found.`);
+        }
+    } else {
+        console.log(`error ${response.status}`);
+    }
+    return null;
 }
 
 function getDayOfDoc(docTitle) {
@@ -144,7 +148,6 @@ async function getNumByRegion(url) {
     var summary = $('#js_content section[data-id="106156"] span:first').text().trim();
     var dateRegex = /(\d{4})年(\d+)月(\d+)日/;
     var dateResult = summary.match(dateRegex);
-    console.log(dateResult);
     var date = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
     var data = {};
     /*
