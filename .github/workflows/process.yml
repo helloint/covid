@@ -1,0 +1,41 @@
+name: Process Data
+on:
+  schedule:
+    - cron:  '0/1 7,12 * * *'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch / CommitID / Tag'
+        required: true
+        default: 'master'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm i
+
+      - name: Process
+        run: npm start
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          COOKIE: ${{ secrets.COOKIE }}
+
+      - name: Push data
+        run: |
+          git config --global user.name 'Wayne Mao'
+          git config --global user.email 'helloint@qq.com'
+          git add ./data/*
+          git commit -am "Automated data"
+          git push

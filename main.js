@@ -21,6 +21,11 @@ const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 const config = require('./config.js');
 
+if (!config.token) {
+    config.token = process.env.TOKEN;
+    config.cookie = process.env.COOKIE;
+}
+
 async function main() {
     var type = process.argv.slice(2)[0];
     var url = process.argv.slice(2)[1];

@@ -4,7 +4,8 @@
   "description": "node main.js [url]",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./main.js run",
+    "upload": "node ./git.js"
   },
   "author": "",
   "license": "ISC",
