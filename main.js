@@ -26,6 +26,9 @@ if (!config.token) {
     config.cookie = process.env.COOKIE;
 }
 
+const links = [
+];
+
 async function main() {
     var type = process.argv.slice(2)[0];
     var url = process.argv.slice(2)[1];
@@ -55,8 +58,18 @@ async function main() {
         case 'shfb':
             await getLatestTopicsFromSHFB();
             break;
+        case 'history':
+            await processHistory();
+            break;
         default:
             console.log('No match type.');
+    }
+}
+
+async function processHistory() {
+    for (const url of links) {
+        // TODO: use wsj website topic
+        await processDailyData(url);
     }
 }
 
@@ -176,6 +189,12 @@ async function processDailyData(url) {
      */
     var regexDeath = /新增本土死亡(?:病例)?(\d+)例/;
     var deathResult = null;
+    /*
+    新增治愈 cured
+    2022年5月11日0—24时，新增本土新冠肺炎确诊病例144例，含106例由既往无症状感染者转为确诊病例。新增治愈出院【432】例。
+     */
+    var regexCured = /新增治愈出院(\d+)例/;
+    var curedResult = null;
 
     /*
     无症状感染者1—无症状感染者3571，居住于浦东新区，
@@ -259,12 +278,37 @@ async function processDailyData(url) {
                 if (content.match(regexDeath)) {
                     deathResult = content.match(regexDeath);
                 }
+
+                if (content.match(regexCured)) {
+                    curedResult = content.match(regexCured);
+                }
             }
         });
     });
 
-    var summaryData = [summaryResult[1], summaryResult[2], summaryResult[3], summaryResult[4], summaryResult[5], deathResult[1]];
-    console.log('总数:' + summaryData.join(','));
+    /*
+    现有确诊 curr_confirm
+    累计治愈 total_cured
+    现有重型 curr_heavy
+    现有危重 curr_cri
+    累计本土确诊56527例，治愈出院50629例，在院治疗5333例（其中重型【349】例，危重型【61】例）。
+    累计本土确诊7720例，治愈出院1407例，在院治疗6306例，死亡7例。
+     */
+    var totalRegex = /治愈出院(\d+)例，在院治疗(\d+)例（其中重型(\d+)例，危重型(\d+)例）。/;
+    var totalResult = null;
+    $('#js_content section[data-id="92620"]').each((i, item) => {
+        var content = $(item).text().trim();
+        if (content.match(totalRegex)) {
+            totalResult = content.match(totalRegex);
+        }
+    });
+    var summaryData = [
+        summaryResult[1], summaryResult[2], summaryResult[3], summaryResult[4], summaryResult[5],
+        deathResult[1],
+        totalResult[2], totalResult[1], totalResult[3], totalResult[4],
+        curedResult[1],
+    ];
+    console.log(summaryData.join(','));
     data.daily = {
         "total": parseInt(summaryResult[1], 10) + parseInt(summaryResult[2], 10),
         "confirm": parseInt(summaryResult[1], 10),
@@ -277,6 +321,11 @@ async function processDailyData(url) {
         "wzz_shaicha": parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10),
         "bihuan": parseInt(summaryResult[4], 10) + parseInt(summaryResult[5], 10),
         "shaicha": parseInt(summaryResult[1], 10) - parseInt(summaryResult[3], 10) - parseInt(summaryResult[4], 10) + parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10),
+        "cured": parseInt(curedResult[1], 10),
+        "curr_confirm": parseInt(totalResult[2], 10),
+        "total_cured": parseInt(totalResult[1], 10),
+        "curr_heavy": parseInt(totalResult[3], 10),
+        "curr_cri": parseInt(totalResult[4], 10),
     };
 
     const ret = [];
