@@ -26,9 +26,6 @@ if (!config.token) {
     config.cookie = process.env.COOKIE;
 }
 
-const links = [
-];
-
 async function main() {
     var type = process.argv.slice(2)[0];
     var url = process.argv.slice(2)[1];
@@ -67,9 +64,8 @@ async function main() {
 }
 
 async function processHistory() {
-    for (const url of links) {
-        // TODO: use wsj website topic
-        await processDailyData(url);
+    for (const link of config.links) {
+        await processDailyData(link[1], false);
     }
 }
 
@@ -164,14 +160,14 @@ async function getLatestTopicsFromSHFB() {
     return null;
 }
 
-async function processDailyData(url) {
+async function processDailyData(url, showRegions = true) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const regionData = {};
     const $ = jQuery = require('jquery')(window);
     var regions = ['浦东新区', '黄浦区', '静安区', '徐汇区', '长宁区', '虹口区', '杨浦区', '普陀区', '闵行区', '宝山区', '嘉定区', '金山区', '松江区', '青浦区', '奉贤区', '崇明区'];
 
-    var summary = $('#js_content section[data-id="106156"] span:first').text().trim();
+    var summary = $('#js_content section[data-id="106156"] span:first').parents('section:first').text().trim();
     var dateRegex = /(\d{4})年(\d+)月(\d+)日/;
     var dateResult = summary.match(dateRegex);
     var date = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
@@ -179,9 +175,28 @@ async function processDailyData(url) {
     /*
     Template:
     新增本土新冠肺炎确诊病例1249和无症状感染者8932例，其中985例确诊病例为既往无症状感染者转归，264例确诊病例和8932例无症状感染者在隔离管控中发现。
+    新增本土新冠肺炎确诊病例5487和无症状感染者9545例，其中5062例确诊病例为既往无症状感染者转归，418例确诊病例和9444例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例1931例和无症状感染者15698例，其中143例确诊病例为此前无症状感染者转归，1685例确诊病例和15551例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例31例和无症状感染者865例，其中30例确诊病例和749例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例5例和无症状感染者78例，其中4例本土确诊病例和57例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例41例（含2例由无症状感染者转为确诊病例）和无症状感染者128例，其中2例本土确诊病例为此前的无症状感染者转归，32例本土确诊病例和90例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例8例（含1例由无症状感染者转为确诊病例）和无症状感染者150例，其中2例确诊病例和69例无症状感染者在隔离管控中发现，1例无症状感染者为外省返沪人员协查中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例9例（其中4例3月14日已通报）和无症状感染者130例（其中34例3月14日已通报），其中5例确诊病例和102例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+
+    新增本土新冠肺炎确诊病例1292（含既往无症状感染者转为确诊病例858例）和无症状感染者9330例，432例确诊病例和9140例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例3084例（含既往无症状感染者转为确诊病例974例）和无症状感染者17332例，实际新增本土阳性感染者19442例，其中1894例确诊病例和16998例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
      */
-    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?和无症状感染者(\d+)例，其中(\d+)例确诊病例为既往无症状感染者转归，(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(，其余在相关风险人群排查中发现)?。/;
+    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?(?:（其中\d+例\d+月\d+日已通报）)?(?:（含\d+例由无症状感染者转为确诊病例）)?和无症状感染者(\d+)例(?:（其中\d+例\d+月\d+日已通报）)?，其中(?:(\d+)例(?:本土)?确诊病例为(?:既往|此前的?)无症状感染者转归，)?(\d+)例(?:本土)?确诊病例和(\d+)例无症状感染者在隔离管控中发现(?:，\d+例无症状感染者为外省返沪人员协查中发现)?(?:，其余在相关风险人群排查中发现)?。/;
     var summaryResult = summary.match(summaryRegex);
+    var summaryResultData = [];
+    if (summaryResult != null) {
+        // FIXME：3月16日的转归数据没捕获
+        summaryResultData = [0, summaryResult[1], summaryResult[2], summaryResult[3] ? summaryResult[3] : 0, summaryResult[4], summaryResult[5]];
+    } else {
+        summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?（含既往无症状感染者转为确诊病例(\d+)例）和无症状感染者(\d+)例，(?:实际新增本土阳性感染者\d+例，其中)?(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(?:，其余在相关风险人群排查中发现)?。/;
+        summaryResult = summary.match(summaryRegex);
+        summaryResultData = [0, summaryResult[1], summaryResult[3], summaryResult[2], summaryResult[4], summaryResult[5]];
+    }
     /*
     Template:
     新增本土死亡11例。
@@ -191,9 +206,11 @@ async function processDailyData(url) {
     var deathResult = null;
     /*
     新增治愈 cured
-    2022年5月11日0—24时，新增本土新冠肺炎确诊病例144例，含106例由既往无症状感染者转为确诊病例。新增治愈出院【432】例。
+    新增本土新冠肺炎确诊病例144例，含106例由既往无症状感染者转为确诊病例。新增治愈出院【432】例。
+    新增本土新冠肺炎确诊病例260例，含2例由无症状感染者转为确诊病例。治愈出院23例
+    新增本土新冠肺炎确诊病例31例。治愈出院8例。
      */
-    var regexCured = /新增治愈出院(\d+)例/;
+    var regexCured = /新增本土新冠肺炎确诊病例\d+例(?:，含\d+例由(?:既往)?无症状感染者转为确诊病例)?。(?:新增)?治愈出院(\d+)例/;
     var curedResult = null;
 
     /*
@@ -291,10 +308,13 @@ async function processDailyData(url) {
     累计治愈 total_cured
     现有重型 curr_heavy
     现有危重 curr_cri
-    累计本土确诊56527例，治愈出院50629例，在院治疗5333例（其中重型【349】例，危重型【61】例）。
+    累计本土确诊56527例，治愈出院50629例，在院治疗5333例（其中重型349例，危重型61例）。
     累计本土确诊7720例，治愈出院1407例，在院治疗6306例，死亡7例。
+    累计本土确诊15284例，治愈出院2600例，在院治疗12684例（其中重症10例）。
+    累计本土确诊24529例，治愈出院4675例，在院治疗19851例（其中重症16例），死亡3例。
+    累计本土确诊6806例，治愈出院1116例，在院治疗5683例，死亡7例（2020年疫情初期发生）。
      */
-    var totalRegex = /治愈出院(\d+)例，在院治疗(\d+)例（其中重型(\d+)例，危重型(\d+)例）。/;
+    var totalRegex = /治愈出院(\d+)例，在院治疗(\d+)例(?:（其中重(?:型|症)(\d+)例(?:，危重型(\d+)例)?）)?(?:，死亡\d+例)?(?:（2020年疫情初期发生）)?。/;
     var totalResult = null;
     $('#js_content section[data-id="92620"]').each((i, item) => {
         var content = $(item).text().trim();
@@ -302,30 +322,37 @@ async function processDailyData(url) {
             totalResult = content.match(totalRegex);
         }
     });
+    var totalResultData = [0, totalResult[1], totalResult[2], totalResult.length >=4 && totalResult[3] ? totalResult[3] : 0, totalResult.length >=5 && totalResult[4] ? totalResult[4] : 0];
+    var deathResultData = [0, deathResult ? deathResult[1] : 0];
+    if (curedResult == null) {
+        // 没新增也没关系，靠累计计算。
+        curedResult = [0, '-'];
+    }
+
     var summaryData = [
-        summaryResult[1], summaryResult[2], summaryResult[3], summaryResult[4], summaryResult[5],
-        deathResult[1],
-        totalResult[2], totalResult[1], totalResult[3], totalResult[4],
-        curedResult[1],
+        summaryResultData[1], summaryResultData[2], summaryResultData[3], summaryResultData[4], summaryResultData[5],
+        deathResultData[1],
+        totalResultData[2],
+        curedResult[1],totalResultData[1], totalResultData[3], totalResultData[4],
     ];
     console.log(summaryData.join(','));
     data.daily = {
-        "total": parseInt(summaryResult[1], 10) + parseInt(summaryResult[2], 10),
-        "confirm": parseInt(summaryResult[1], 10),
-        "wzz": parseInt(summaryResult[2], 10),
-        "zhuangui": parseInt(summaryResult[3], 10),
-        "confirm_bihuan": parseInt(summaryResult[4], 10),
-        "wzz_bihuan": parseInt(summaryResult[5], 10),
-        "death": parseInt(deathResult[1], 10),
-        "confirm_shaicha": parseInt(summaryResult[1], 10) - parseInt(summaryResult[3], 10) - parseInt(summaryResult[4], 10),
-        "wzz_shaicha": parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10),
-        "bihuan": parseInt(summaryResult[4], 10) + parseInt(summaryResult[5], 10),
-        "shaicha": parseInt(summaryResult[1], 10) - parseInt(summaryResult[3], 10) - parseInt(summaryResult[4], 10) + parseInt(summaryResult[2], 10) - parseInt(summaryResult[5], 10),
+        "total": parseInt(summaryResultData[1], 10) + parseInt(summaryResultData[2], 10),
+        "confirm": parseInt(summaryResultData[1], 10),
+        "wzz": parseInt(summaryResultData[2], 10),
+        "zhuangui": parseInt(summaryResultData[3], 10),
+        "confirm_bihuan": parseInt(summaryResultData[4], 10),
+        "wzz_bihuan": parseInt(summaryResultData[5], 10),
+        "death": parseInt(deathResultData[1], 10),
+        "confirm_shaicha": parseInt(summaryResultData[1], 10) - parseInt(summaryResultData[3], 10) - parseInt(summaryResultData[4], 10),
+        "wzz_shaicha": parseInt(summaryResultData[2], 10) - parseInt(summaryResultData[5], 10),
+        "bihuan": parseInt(summaryResultData[4], 10) + parseInt(summaryResultData[5], 10),
+        "shaicha": parseInt(summaryResultData[1], 10) - parseInt(summaryResultData[3], 10) - parseInt(summaryResultData[4], 10) + parseInt(summaryResultData[2], 10) - parseInt(summaryResultData[5], 10),
         "cured": parseInt(curedResult[1], 10),
-        "curr_confirm": parseInt(totalResult[2], 10),
-        "total_cured": parseInt(totalResult[1], 10),
-        "curr_heavy": parseInt(totalResult[3], 10),
-        "curr_cri": parseInt(totalResult[4], 10),
+        "curr_confirm": parseInt(totalResultData[2], 10),
+        "total_cured": parseInt(totalResultData[1], 10),
+        "curr_heavy": parseInt(totalResultData[3], 10),
+        "curr_cri": parseInt(totalResultData[4], 10),
     };
 
     const ret = [];
@@ -339,7 +366,7 @@ async function processDailyData(url) {
     data.regions = [];
     ret.forEach((item, i) => {
         // output the log into Excel
-        console.log(item.join(','));
+        showRegions && console.log(item.join(','));
         data.regions.push(
             {
                 "region": item[0],
@@ -413,7 +440,7 @@ async function getRegionStatusList(url) {
 }
 
 async function getListPage() {
-    const fromDate = new Date('2022-03-01 00:00:00').getTime();
+    const fromDate = new Date('2022-02-26 00:00:00').getTime();
     const result = await getTopicsFromWsjListPages(5);
     const ret = result.filter((item) => {
         const itemDate = new Date(item[0]).getTime();
@@ -421,7 +448,7 @@ async function getListPage() {
     });
     ret.sort((a, b) => new Date(a[0]).getTime() > new Date(b[0]).getTime());
     ret.forEach((item) => {
-        console.log(`date: ${item[0]}`);
+        // console.log(`date: ${item[0]}`);
         console.log(`title: ${item[2]}`);
         console.log(`url: ${item[1]}`);
     });
@@ -479,7 +506,7 @@ async function getWsjMatchedLinksFromUrl(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const ret = [];
-    const regex = /上海(\d+)年(\d+)月(\d+)日，新增本土新冠肺炎确诊病例/;
+    const regex = /上海(\d+)年(\d+)月(\d+)日，无?新增本土新冠肺炎确诊病例/;
 
     const $ = jQuery = require('jquery')(window);
     // $('#main .main-container .container ul a').each((index, item) => {
@@ -493,16 +520,6 @@ async function getWsjMatchedLinksFromUrl(url) {
     });
 
     return ret;
-}
-
-async function getMetadataFromWsjTopicPage(url) {
-    /*
-    新增本土新冠肺炎确诊病例3例和无症状感染者62例，1例病例因症就诊发现，其余在隔离管控中发现。
-    新增本土新冠肺炎确诊病例8例（含1例由无症状感染者转为确诊病例）和无症状感染者150例，其中1例确诊病例和69例无症状感染者在隔离管控中发现，1例无症状感染者为外省返沪人员协查中发现，其余在相关风险人群排查中发现。
-    新增本土新冠肺炎确诊病例24例和无症状感染者734例，其中22例确诊病例和652例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
-    新增本土新冠肺炎确诊病例4例和无症状感染者979例，其中4例确诊病例和878例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
-    新增本土新冠肺炎确诊病例38例和无症状感染者2231例，其中5例确诊病例为此前无症状感染者转归，3例确诊病例和1773例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
-     */
 }
 
 /**
