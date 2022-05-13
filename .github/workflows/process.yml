@@ -3,12 +3,6 @@ on:
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch / CommitID / Tag'
-        required: true
-        default: 'master'
-        type: string
 
 jobs:
   build:
