@@ -389,6 +389,8 @@ async function processDailyData(url, showRegions = true) {
     const dailyTotalData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
     data.date = parseDate(date);
     dailyTotalData.daily[data.date] = data.daily;
+    // 要不要只保留7天的regions数据，把超过7天的删除？
+    dailyTotalData.regions[data.date] = data.regions;
     var totalNums = {
         confirm: 0,
         wzz: 0,
