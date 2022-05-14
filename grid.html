@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>基础数据</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
             font-size: 12px;
@@ -18,6 +19,8 @@
     <script src="https://cdn.datatables.net/fixedheader/3.2.3/js/dataTables.fixedHeader.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/4.1.0/css/fixedColumns.dataTables.min.css">
     <script src="https://cdn.datatables.net/fixedcolumns/4.1.0/js/dataTables.fixedColumns.min.js"></script>
+<!--    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css">-->
+<!--    <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>-->
     <script>
         var labels = {
             "date": "日期",
@@ -47,8 +50,32 @@
             "total_wzz_correct": "累积无症状（去除转归）",
             "total_death": "累计死亡",
         };
-        var basicData = ['confirm', 'wzz', 'zhuangui', 'confirm_bihuan', 'wzz_bihuan', 'death', 'curr_confirm', 'cured', 'total_cured', 'curr_heavy', 'curr_cri', 'total', 'confirm_shaicha', 'wzz_shaicha', 'bihuan', 'shaicha'];
-        var calcData = ['history_total_cured', 'confirm-wzz_percent', 'wzz-zhuangui_percent', 'total_confirm', 'total_wzz', 'total_zhuangui', 'total_wzz_correct', 'total_death'];
+        var dataColumns = [
+            'confirm',
+            'wzz',
+            'zhuangui',
+            'confirm_bihuan',
+            'wzz_bihuan',
+            'confirm_shaicha',
+            'wzz_shaicha',
+            'curr_confirm',
+            'curr_heavy',
+            'curr_cri',
+            'cured',
+            'total_cured',
+            'death',
+            'bihuan',
+            'shaicha',
+            'confirm-wzz_percent',
+            'wzz-zhuangui_percent',
+            'total_confirm',
+            'total_wzz',
+            'total_zhuangui',
+            'total_wzz_correct',
+            'total',
+            'total_death',
+            'history_total_cured',
+        ];
         function init() {
             fetch(`data/dailyTotal.json`)
                 .then(response => response.json())
@@ -81,16 +108,16 @@
         }
         function drawTable(data) {
             var html = `<table id="covidData" class="dataTable display cell-border compact hover nowrap row-border"><thead><tr>`;
-            Object.entries(labels).forEach(([key, value]) => {
-               html += `<th>${value}</th>`;
+            html += `<th>${labels['date']}</th>`;
+            dataColumns.forEach((key) => {
+               html += `<th>${labels[key]}</th>`;
             });
 
             html += `</tr></thead><tbody>`;
             Object.entries(data.daily).forEach(([date, dailyData]) => {
                 var row = `<tr>`;
                 row += `<td>${date}</td>`;
-                Object.entries(labels).forEach(([key, chnName]) => {
-                    if (key === 'date') return true;
+                dataColumns.forEach((key) => {
                     row += `<td>${dailyData[key] !== undefined ? dailyData[key] : 'n/a'}</td>`;
                 });
                 row += `</tr>`;
@@ -104,6 +131,7 @@
                 paging: false,
                 searching: false,
                 ordering:  false,
+                // responsive: true,
             });
         }
     </script>
