@@ -10,7 +10,7 @@
         }
         table.dataTable td {
             text-align: center;
-        }
+``        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.12.0/js/jquery.dataTables.min.js"></script>
@@ -80,7 +80,7 @@
             fetch(`data/dailyTotal.json`)
                 .then(response => response.json())
                 .then(data => {
-                    drawTable(processData(data));
+                    renderUI(processData(data));
                 });
         }
         function processData(data) {
@@ -106,7 +106,7 @@
             });
             return data;
         }
-        function drawTable(data) {
+        function renderUI(data) {
             var html = `<table id="covidData" class="dataTable display cell-border compact hover nowrap row-border"><thead><tr>`;
             html += `<th>${labels['date']}</th>`;
             dataColumns.forEach((key) => {

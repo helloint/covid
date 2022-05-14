@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>图表</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+        }
+        .chart {
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+        }
+        .chart-title {
+            width: 100%;
+            max-width: 800px;
+            height: 50px;
+            font-size: 30px;
+            color: #eff2f9;
+            line-height: 50px;
+            text-align: center;
+            background-color: #100c28;
+        }
+        .chart-title .chart-title-author {
+            margin-left: 10px;
+            font-size: 12px;
+        }
+    </style>
+    <!-- Include the ECharts file you just downloaded -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        function init() {
+            fetch(`data/dailyTotal.json`)
+                .then(response => response.json())
+                .then(data => {
+                    renderUI(processData(data));
+                    $('#date').text(Object.keys(data.daily)[Object.keys(data.daily).length - 1]);
+                });
+        }
+        function getDailyData(data, key) {
+            var ret = [];
+            Object.values(data).forEach((dailyData) => {
+                ret.push(dailyData[key]);
+            });
+            return ret;
+        }
+        var commonChartOption = {
+            title: {},
+            tooltip: {
+                trigger: 'axis',
+            },
+            legend: {
+                top: '15',
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true,
+            },
+            toolbox: {
+                feature: {
+                    saveAsImage: {},
+                }
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                axisLabel: {
+                    interval:0, rotate:40,
+                }
+            },
+            yAxis: {
+                type: 'value',
+            }
+        };
+        function renderUI(data) {
+            var confirmChartOption = $.extend(true, {}, commonChartOption, {
+                title: {
+                    text: '确诊 ｜ 无症状',
+                },
+                xAxis: {
+                    data: Object.keys(data.daily),
+                },
+                legend: {
+                    data: ['确诊', '无症状'],
+                },
+                series: [
+                    {
+                        name: '确诊',
+                        type: 'line',
+                        label: {
+                            show: true,
+                        },
+                        color: '#4f6fc7',
+                        data: getDailyData(data.daily, 'confirm'),
+                    },
+                    {
+                        name: '无症状',
+                        type: 'line',
+                        label: {
+                            show: true,
+                        },
+                        color: '#e58e51',
+                        data: getDailyData(data.daily, 'wzz'),
+                    }
+                ],
+            });
+            chart0.setOption(confirmChartOption);
+
+            var shaichaChartOption = $.extend(true, {}, commonChartOption, {
+                title: {
+                    text: '社会面 阳性 + 确诊',
+                },
+                xAxis: {
+                    data: Object.keys(data.daily),
+                },
+                legend: {
+                    data: ['风险排查确诊', '风险排查无症状'],
+                },
+                series: [
+                    {
+                        name: '风险排查确诊',
+                        type: 'line',
+                        label: {
+                            show: true,
+                            position: 'inside',
+                            // offset: [5, -6]
+                        },
+                        color: '#4f6fc7',
+                        data: getDailyData(data.daily, 'confirm_shaicha'),
+                    },
+                    {
+                        name: '风险排查无症状',
+                        type: 'line',
+                        label: {
+                            show: true,
+                        },
+                        color: '#e58e51',
+                        data: getDailyData(data.daily, 'wzz_shaicha'),
+                    }
+                ],
+            });
+            chart1.setOption(shaichaChartOption);
+
+            var curedChartOption = $.extend(true, {}, commonChartOption, {
+                title: {
+                    text: '在院治疗 ｜累计治愈',
+                },
+                xAxis: {
+                    data: Object.keys(data.daily),
+                },
+                legend: {
+                    data: ['在院治疗', '累计治愈'],
+                },
+                series: [
+                    {
+                        name: '在院治疗',
+                        type: 'bar',
+                        label: {
+                            show: true,
+                        },
+                        color: '#4f6fc7',
+                        data: getDailyData(data.daily, 'curr_confirm'),
+                    },
+                    {
+                        name: '累计治愈',
+                        type: 'bar',
+                        label: {
+                            show: true,
+                            position: 'top',
+                        },
+                        color: '#e58e51',
+                        data: getDailyData(data.daily, 'total_cured'),
+                    }
+                ],
+            });
+            chart2.setOption(curedChartOption);
+
+            var deathChartOption = $.extend(true, {}, commonChartOption, {
+                title: {
+                    text: '死亡病例',
+                },
+                xAxis: {
+                    data: Object.keys(data.daily),
+                },
+                series: [
+                    {
+                        name: '死亡病例',
+                        type: 'bar',
+                        label: {
+                            show: true,
+                            position: 'top',
+                            // offset: [5, -6]
+                        },
+                        color: '#4f6fc7',
+                        data: getDailyData(data.daily, 'death'),
+                    },
+                ],
+            });
+            chart3.setOption(deathChartOption);
+        }
+        function processData(data) {
+            var total_cured = 0,
+                total_confirm = 0,
+                total_wzz = 0,
+                total_zhuangui = 0,
+                total_death = 0;
+            Object.entries(data.daily).forEach(([date, dailyData]) => {
+                total_cured = total_cured + dailyData['cured'];
+                dailyData['history_total_cured'] = total_cured + 385;
+                dailyData['confirm-wzz_percent'] = parseInt(dailyData['confirm'] / dailyData['wzz'] * 10000, 10) / 100 + '%';
+                dailyData['wzz-zhuangui_percent'] = parseInt(dailyData['zhuangui'] / dailyData['wzz'] * 10000, 10) / 100 + '%';
+                total_confirm = total_confirm + dailyData['confirm'];
+                dailyData['total_confirm'] = total_confirm;
+                total_wzz = total_wzz + dailyData['wzz'];
+                dailyData['total_wzz'] = total_wzz;
+                total_zhuangui = total_zhuangui + dailyData['zhuangui'];
+                dailyData['total_zhuangui'] = total_zhuangui;
+                dailyData['total_wzz_correct'] = dailyData['total_wzz'] - dailyData['total_zhuangui'];
+                total_death = total_death + dailyData['death'];
+                dailyData['total_death'] = total_death;
+            });
+
+            var ret = {};
+            // 最近20天
+            var totalNum = Object.keys(data.daily).length;
+            var index = 0;
+            Object.entries(data.daily).forEach(([date, dailyData]) => {
+                index++;
+                if (index > totalNum - 20) {
+                    var dateStr = parseInt(date.split('-')[1], 10) + '月' + parseInt(date.split('-')[2], 10) + '日';
+                    ret[dateStr] = dailyData;
+                }
+            });
+
+            return {total: data.total, daily: ret};
+        }
+    </script>
+</head>
+<body onload="init()">
+<div class="chart-title"><span id="date" class="chart-title-date"></span> Shanghai<span class="chart-title-author">by helloint</span></div>
+<div id="chart0" class="chart"></div>
+<div id="chart1" class="chart"></div>
+<div id="chart2" class="chart"></div>
+<div id="chart3" class="chart"></div>
+<script type="text/javascript">
+    var chart0 = echarts.init(document.getElementById('chart0'), 'dark');
+    var chart1 = echarts.init(document.getElementById('chart1'), 'dark');
+    var chart2 = echarts.init(document.getElementById('chart2'), 'dark');
+    var chart3 = echarts.init(document.getElementById('chart3'), 'dark');
+</script>
+</body>
+</html>
