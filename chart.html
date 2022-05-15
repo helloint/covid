@@ -474,23 +474,20 @@
     }
 
     function downloadChart() {
-        html2canvas(document.querySelector("#chartTitle"), {
-            width: 1600,
-            height: 100
-        }).then(titleCanvas => {
+        html2canvas(document.querySelector("#chartTitle")).then(titleCanvas => {
             var canvas0 = $('#chart0 canvas')[0];
             var canvas1 = $('#chart1 canvas')[0];
             var canvas2 = $('#chart2 canvas')[0];
             var canvas3 = $('#chart3 canvas')[0];
             var canvas = document.createElement('canvas');
-            canvas.width = 1600;
-            canvas.height = 3300;
+            canvas.width = titleCanvas.width;
+            canvas.height = titleCanvas.height + canvas0.height + canvas1.height + canvas2.height + canvas3.height;
             var ctx = canvas.getContext('2d');
             ctx.drawImage(titleCanvas, 0, 0);
-            ctx.drawImage(canvas0, 0, 100);
-            ctx.drawImage(canvas1, 0, 900);
-            ctx.drawImage(canvas2, 0, 1700);
-            ctx.drawImage(canvas3, 0, 2500);
+            ctx.drawImage(canvas0, 0, titleCanvas.height);
+            ctx.drawImage(canvas1, 0, titleCanvas.height + canvas0.height);
+            ctx.drawImage(canvas2, 0, titleCanvas.height + canvas0.height + canvas1.height);
+            ctx.drawImage(canvas3, 0, titleCanvas.height + canvas0.height + canvas1.height + canvas2.height);
 
             var link = document.createElement('a');
             link.download = "chart.png";
