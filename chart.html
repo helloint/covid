@@ -8,23 +8,32 @@
             font: 12px Arial, Helvetica, sans-serif;
         }
         .chart {
-            width: 100%;
-            max-width: 800px;
+            width: 800px;
             height: 400px;
         }
         .chart-title {
-            width: 100%;
-            max-width: 800px;
+            width: 800px;
             height: 50px;
-            font-size: 30px;
             color: #eff2f9;
             line-height: 50px;
-            text-align: center;
             background-color: #100c28;
+            display: flex;
         }
-        .chart-title .chart-title-author {
-            margin-left: 10px;
+        .chart-title .chart-title-center {
+            width: 600px;
+            font-size: 30px;
+            text-align: center;
+        }
+        .chart-title .chart-title-left {
+            width: 100px;
+            padding-left: 5px;
+        }
+        .chart-title .chart-title-right {
+            width: 100px;
             font-size: 12px;
+            text-align: right;
+            vertical-align: bottom;
+            padding-right: 5px;
         }
 
         #regionGrid {
@@ -52,9 +61,8 @@
         #regionGrid .title {
             width: 635px;
             height: 31px;
-            font-size: 22px;
+            font-size: 30px;
             font-weight: normal;
-            line-height: 16px;
             border-left: 0;
             border-right: 0;
         }
@@ -101,6 +109,7 @@
     <!-- Include the ECharts file you just downloaded -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="js/html2canvas.min.js"></script>
     <script src="js/common.js"></script>
     <script>
         function init() {
@@ -108,7 +117,7 @@
                 .then(response => response.json())
                 .then(data => {
                     extendCalcData(data);
-                    $('#date').text(Object.keys(data.daily)[Object.keys(data.daily).length - 1]);
+                    $('#date').text(formatDate(Object.keys(data.daily)[Object.keys(data.daily).length - 1]));
                     renderUI(processTableData(data));
                     renderRegion(data);
                 });
@@ -170,8 +179,8 @@
 
             const dailyData = data.daily;
             const todayDate = Object.keys(dailyData)[Object.keys(dailyData).length - 1];
-            const todayDateStr = parseInt(todayDate.split('-')[0], 10) + '年' + parseInt(todayDate.split('-')[1], 10) + '月' + parseInt(todayDate.split('-')[2], 10) + '日';
-            $('#regionGridDate').text(todayDateStr);
+            const todayDateStr = formatDate(todayDate);
+            $('#regionGridDate').text(todayDateStr + ' 上海');
             const dailyDay0 = dailyData[todayDate];
             let todaySummary = {};
             dayIndex = 0;
@@ -407,9 +416,19 @@
             var result = b !== 0 ? (a / b - 1) : a;
             return [result <= 0 ? 'minus' : 'plus', parseInt(result * 10000, 10) / 100 + '%'];
         }
+
+        /**
+         *
+         * @param date 2022-05-10
+         * @returns {string} 2022年5月10日
+         */
+        function formatDate(date) {
+            return parseInt(date.split('-')[0], 10) + '年' + parseInt(date.split('-')[1], 10) + '月' + parseInt(date.split('-')[2], 10) + '日';
+        }
     </script>
 </head>
 <body onload="init()">
+<a href="javascript:void(0);" onclick="downloadTable();"><img src="images/download.svg" width="32" height="32"></a>
 <div id="regionsContainer" class="table">
     <table id="regionGrid">
         <thead>
@@ -430,7 +449,12 @@
         <tbody></tbody>
     </table>
 </div>
-<div class="chart-title"><span id="date" class="chart-title-date"></span> Shanghai<span class="chart-title-author">by helloint</span></div>
+<a href="javascript:void(0);" onclick="downloadChart();"><img src="images/download.svg" width="32" height="32"></a>
+<div id="chartTitle" class="chart-title">
+    <div class="chart-title-left"></div>
+    <div class="chart-title-center"><span id="date" class="chart-title-date"></span> 上海</div>
+    <div class="chart-title-right">by helloint</div>
+</div>
 <div id="chart0" class="chart"></div>
 <div id="chart1" class="chart"></div>
 <div id="chart2" class="chart"></div>
@@ -440,6 +464,40 @@
     var chart1 = echarts.init(document.getElementById('chart1'), 'dark');
     var chart2 = echarts.init(document.getElementById('chart2'), 'dark');
     var chart3 = echarts.init(document.getElementById('chart3'), 'dark');
+    function downloadTable() {
+        html2canvas(document.querySelector("#regionGrid")).then(canvas => {
+            var link = document.createElement('a');
+            link.download = "chart.png";
+            link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            link.click();
+        });
+    }
+
+    function downloadChart() {
+        html2canvas(document.querySelector("#chartTitle"), {
+            width: 1600,
+            height: 100
+        }).then(titleCanvas => {
+            var canvas0 = $('#chart0 canvas')[0];
+            var canvas1 = $('#chart1 canvas')[0];
+            var canvas2 = $('#chart2 canvas')[0];
+            var canvas3 = $('#chart3 canvas')[0];
+            var canvas = document.createElement('canvas');
+            canvas.width = 1600;
+            canvas.height = 3300;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(titleCanvas, 0, 0);
+            ctx.drawImage(canvas0, 0, 100);
+            ctx.drawImage(canvas1, 0, 900);
+            ctx.drawImage(canvas2, 0, 1700);
+            ctx.drawImage(canvas3, 0, 2500);
+
+            var link = document.createElement('a');
+            link.download = "chart.png";
+            link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            link.click();
+        });
+    }
 </script>
 </body>
 </html>
