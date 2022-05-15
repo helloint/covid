@@ -5,7 +5,7 @@
     <title>图表</title>
     <style>
         body {
-            margin: 0;
+            font: 12px Arial, Helvetica, sans-serif;
         }
         .chart {
             width: 100%;
@@ -26,19 +26,194 @@
             margin-left: 10px;
             font-size: 12px;
         }
+
+        #regionGrid {
+            font-size: 14px;
+            border-collapse: collapse;
+        }
+        #regionGrid td,
+        #regionGrid th {
+            border-left-color: white;
+            border-right-color: white;
+            border-top-color: #366dbb;
+            border-bottom-color: #366dbb;
+            border-width: 1px;
+            border-style: solid;
+            text-align: center;
+        }
+        #regionGrid th {
+            color: white;
+            border-color: white;
+            background-color: #366dbb;
+        }
+        #regionGrid .corner {
+            border-right: 0;
+        }
+        #regionGrid .title {
+            width: 635px;
+            height: 31px;
+            font-size: 22px;
+            font-weight: normal;
+            line-height: 16px;
+            border-left: 0;
+            border-right: 0;
+        }
+        #regionGrid .author {
+            border-left: 0;
+            font-size: 12px;
+            font-weight: normal;
+            text-align: right;
+            padding-right: 5px;
+            vertical-align: bottom;
+        }
+        #regionGrid .regions {
+            width: 78px;
+        }
+        #regionGrid .total-title {
+            width: 78px;
+        }
+        #regionGrid .num {
+            width: 48px;
+        }
+        #regionGrid .percent {
+            width: 78px;
+        }
+        #regionGrid .region .total {
+            color: red;
+            font-weight: bold;
+        }
+        #regionGrid .confirm {
+            background-color: #e0eaf6;
+        }
+        #regionGrid .wzz {
+            background-color: #f5d5e9;
+        }
+        #regionGrid .diff {
+            background-color: #fcf3cf;
+        }
+        #regionGrid .diff.plus {
+            color: red;
+        }
+        #regionGrid .diff.minus {
+            color: green;
+        }
     </style>
     <!-- Include the ECharts file you just downloaded -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="js/common.js"></script>
     <script>
         function init() {
             fetch(`data/dailyTotal.json`)
                 .then(response => response.json())
                 .then(data => {
-                    renderUI(processData(data));
+                    extendCalcData(data);
                     $('#date').text(Object.keys(data.daily)[Object.keys(data.daily).length - 1]);
+                    renderUI(processTableData(data));
+                    renderRegion(data);
                 });
         }
+
+        function renderRegion(data) {
+            const regionData = data.regions;
+            const regionSummary = [];
+            // 计算1，3，7历史数据均值
+            // index = 0,1,0,1,0,0,0,1
+            let dayIndex = 0;
+            for (let i = Object.keys(regionData).length - 1; i > 0; i--) {
+                regionData[Object.keys(regionData)[i]].forEach((region, regionIndex) => {
+                    if (dayIndex === 0) {
+                        // {区名 name, 当天 today, 累计 total, 昨天 yesterday, 3天均值 avg3, 7天均值 avg7}
+                        regionSummary.push({
+                            name: region.region,
+                            confirm_bihuan: region.confirm_bihuan,
+                            zhuangui: region.zhuangui,
+                            confirm_shaicha: region.confirm_shaicha,
+                            wzz_bihuan: region.wzz_bihuan,
+                            wzz_shaicha: region.wzz_shaicha,
+                            today: region.total,
+                            total: 0,
+                            yesterday: 0,
+                            avg3: 0,
+                            avg7: 0
+                        });
+                    } else {
+                        regionSummary[regionIndex].total = regionSummary[regionIndex].total + region.total;
+                        if (dayIndex === 1) {
+                            regionSummary[regionIndex].yesterday = region.total;
+                        } else if (dayIndex === 3) {
+                            regionSummary[regionIndex].avg3 = regionSummary[regionIndex].total / 3;
+                        } else if (dayIndex === 7) {
+                            regionSummary[regionIndex].avg7 = regionSummary[regionIndex].total / 7;
+                        }
+                    }
+                });
+                dayIndex++;
+            }
+            let tbody = '';
+            regionSummary.sort((a, b) => b.today - a.today);
+            regionSummary.forEach((region) => {
+                tbody += `<tr class="region region-${region.name}">
+                    <th>${region.name}</th>
+                    <td class="total">${region.today}</td>
+                    <td class="confirm num-confirm-bihuan">${region.confirm_bihuan}</td>
+                    <td class="confirm num-zhuangui">${region.zhuangui}</td>
+                    <td class="confirm num-confirm-shaicha">${region.confirm_shaicha}</td>
+                    <td class="wzz num-wzz-bihuan">${region.wzz_bihuan}</td>
+                    <td class="wzz num-wzz-shaicha">${region.wzz_shaicha}</td>
+                    <td class="diff num-diff-1 ${calcPercent(region.today, region.yesterday)[0]}">${calcPercent(region.today, region.yesterday)[1]}</td>
+                    <td class="diff num-diff-3 ${calcPercent(region.today, region.avg3)[0]}">${calcPercent(region.today, region.avg3)[1]}</td>
+                    <td class="diff num-diff-7 ${calcPercent(region.today, region.avg7)[0]}">${calcPercent(region.today, region.avg7)[1]}</td>
+                </tr>`;
+            });
+            $('#regionGrid tbody').append(tbody);
+
+            const dailyData = data.daily;
+            const todayDate = Object.keys(dailyData)[Object.keys(dailyData).length - 1];
+            const todayDateStr = parseInt(todayDate.split('-')[0], 10) + '年' + parseInt(todayDate.split('-')[1], 10) + '月' + parseInt(todayDate.split('-')[2], 10) + '日';
+            $('#regionGridDate').text(todayDateStr);
+            const dailyDay0 = dailyData[todayDate];
+            let todaySummary = {};
+            dayIndex = 0;
+            for (let i = Object.keys(dailyData).length - 1; i > 0; i--) {
+                const daily = dailyData[Object.keys(dailyData)[i]];
+                if (dayIndex === 0) {
+                    // {当天today, 累计total, 昨天yesterday, 3天均值avg3, 7天均值avg7}
+                    todaySummary = {
+                        today: daily.total, total: 0,
+                        yesterday: 0, avg3: 0, avg7: 0
+                    };
+                } else {
+                    todaySummary.total = todaySummary.total + daily.total;
+                    if (dayIndex === 1) {
+                        todaySummary.yesterday = daily.total;
+                    } else if (dayIndex === 3) {
+                        todaySummary.avg3 = todaySummary.total / 3;
+                    } else if (dayIndex === 7) {
+                        todaySummary.avg7 = todaySummary.total / 7;
+                    }
+                }
+                dayIndex++;
+            }
+            const tfoot = `<tr class="region-total">
+                <th rowspan="2">合计</th>
+                <th rowspan="2" class="num-total">${dailyDay0.total}</th>
+                <th class="num-confirm-bihuan">${dailyDay0.confirm_bihuan}</th>
+                <th class="num-zhuangui">${dailyDay0.zhuangui}</th>
+                <th class="num-confirm-shaicha">${dailyDay0.confirm_shaicha}</th>
+                <th class="num-wzz-bihuan">${dailyDay0.wzz_bihuan}</th>
+                <th class="num-wzz-shaicha">${dailyDay0.wzz_shaicha}</th>
+                <th rowspan="2" class="num-diff-1">${calcPercent(dailyDay0.total, todaySummary.yesterday)[1]}</th>
+                <th rowspan="2" class="num-diff-3">${calcPercent(dailyDay0.total, todaySummary.avg3)[1]}</th>
+                <th rowspan="2" class="num-diff-7">${calcPercent(dailyDay0.total, todaySummary.avg7)[1]}</th>
+            </tr>
+            <tr class="region-total-2">
+                <th colspan="3" class="num-confirm">${dailyDay0.confirm}</th>
+                <th colspan="2" class="num-wzz">${dailyDay0.wzz}</th>
+            </tr>`;
+            $('#regionGrid tfoot').append(tfoot);
+        }
+
         function getDailyData(data, key) {
             var ret = [];
             Object.values(data).forEach((dailyData) => {
@@ -46,6 +221,7 @@
             });
             return ret;
         }
+
         var commonChartOption = {
             title: {},
             tooltip: {
@@ -76,6 +252,7 @@
                 type: 'value',
             }
         };
+
         function renderUI(data) {
             var confirmChartOption = $.extend(true, {}, commonChartOption, {
                 title: {
@@ -202,28 +379,8 @@
             });
             chart3.setOption(deathChartOption);
         }
-        function processData(data) {
-            var total_cured = 0,
-                total_confirm = 0,
-                total_wzz = 0,
-                total_zhuangui = 0,
-                total_death = 0;
-            Object.entries(data.daily).forEach(([date, dailyData]) => {
-                total_cured = total_cured + dailyData['cured'];
-                dailyData['history_total_cured'] = total_cured + 385;
-                dailyData['confirm-wzz_percent'] = parseInt(dailyData['confirm'] / dailyData['wzz'] * 10000, 10) / 100 + '%';
-                dailyData['wzz-zhuangui_percent'] = parseInt(dailyData['zhuangui'] / dailyData['wzz'] * 10000, 10) / 100 + '%';
-                total_confirm = total_confirm + dailyData['confirm'];
-                dailyData['total_confirm'] = total_confirm;
-                total_wzz = total_wzz + dailyData['wzz'];
-                dailyData['total_wzz'] = total_wzz;
-                total_zhuangui = total_zhuangui + dailyData['zhuangui'];
-                dailyData['total_zhuangui'] = total_zhuangui;
-                dailyData['total_wzz_correct'] = dailyData['total_wzz'] - dailyData['total_zhuangui'];
-                total_death = total_death + dailyData['death'];
-                dailyData['total_death'] = total_death;
-            });
 
+        function processTableData(data) {
             var ret = {};
             // 最近20天
             var totalNum = Object.keys(data.daily).length;
@@ -238,9 +395,41 @@
 
             return {total: data.total, daily: ret};
         }
+
+        /**
+         * return ['plus', '12.90%'], ['minus', '-11.65%']
+         * @param a 分子
+         * @param b 分母
+         */
+        function calcPercent(a, b) {
+            a = parseFloat(a);
+            b = parseFloat(b);
+            var result = b !== 0 ? (a / b - 1) : a;
+            return [result <= 0 ? 'minus' : 'plus', parseInt(result * 10000, 10) / 100 + '%'];
+        }
     </script>
 </head>
 <body onload="init()">
+<div id="regionsContainer" class="table">
+    <table id="regionGrid">
+        <thead>
+        <tr>
+            <th class="corner"></th><th colspan="8" id="regionGridDate" class="title">-</th><th class="author">by helloint</th>
+        </tr>
+        <tr>
+            <th rowspan="2" class="regions">各区</th><th rowspan="2" class="total-title">总数</th><th colspan="3">确诊</th><th colspan="2">无症状</th>
+            <th rowspan="2" class="percent">环比昨日</th>
+            <th rowspan="2" class="percent">3日平均<br>对比</th>
+            <th rowspan="2" class="percent">7日平均<br>对比</th>
+        </tr>
+        <tr>
+            <th class="num">闭环</th><th class="num">转归</th><th class="num">筛查</th><th class="num">闭环</th><th class="num">筛查</th>
+        </tr>
+        </thead>
+        <tfoot></tfoot>
+        <tbody></tbody>
+    </table>
+</div>
 <div class="chart-title"><span id="date" class="chart-title-date"></span> Shanghai<span class="chart-title-author">by helloint</span></div>
 <div id="chart0" class="chart"></div>
 <div id="chart1" class="chart"></div>

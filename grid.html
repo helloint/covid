@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
-            font-size: 12px;
+            font: 12px Arial, Helvetica, sans-serif;
         }
         table.dataTable td {
             text-align: center;
-``        }
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.12.0/js/jquery.dataTables.min.js"></script>
@@ -19,8 +19,7 @@
     <script src="https://cdn.datatables.net/fixedheader/3.2.3/js/dataTables.fixedHeader.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/4.1.0/css/fixedColumns.dataTables.min.css">
     <script src="https://cdn.datatables.net/fixedcolumns/4.1.0/js/dataTables.fixedColumns.min.js"></script>
-<!--    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css">-->
-<!--    <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>-->
+    <script src="js/common.js"></script>
     <script>
         var labels = {
             "date": "日期",
@@ -50,6 +49,7 @@
             "total_wzz_correct": "累积无症状（去除转归）",
             "total_death": "累计死亡",
         };
+
         var dataColumns = [
             'confirm',
             'wzz',
@@ -76,37 +76,20 @@
             'total_death',
             'history_total_cured',
         ];
+
         function init() {
             fetch(`data/dailyTotal.json`)
                 .then(response => response.json())
                 .then(data => {
-                    renderUI(processData(data));
+                    renderUI(extendCalcData(data));
                 });
         }
-        function processData(data) {
-            var total_cured = 0,
-                total_confirm = 0,
-                total_wzz = 0,
-                total_zhuangui = 0,
-                total_death = 0;
-            Object.entries(data.daily).forEach(([date, dailyData]) => {
-                total_cured = total_cured + dailyData['cured'];
-                dailyData['history_total_cured'] = total_cured + 385;
-                dailyData['confirm-wzz_percent'] = parseInt(dailyData['confirm'] / dailyData['wzz'] * 10000, 10) / 100 + '%';
-                dailyData['wzz-zhuangui_percent'] = parseInt(dailyData['zhuangui'] / dailyData['wzz'] * 10000, 10) / 100 + '%';
-                total_confirm = total_confirm + dailyData['confirm'];
-                dailyData['total_confirm'] = total_confirm;
-                total_wzz = total_wzz + dailyData['wzz'];
-                dailyData['total_wzz'] = total_wzz;
-                total_zhuangui = total_zhuangui + dailyData['zhuangui'];
-                dailyData['total_zhuangui'] = total_zhuangui;
-                dailyData['total_wzz_correct'] = dailyData['total_wzz'] - dailyData['total_zhuangui'];
-                total_death = total_death + dailyData['death'];
-                dailyData['total_death'] = total_death;
-            });
-            return data;
-        }
+
         function renderUI(data) {
+            renderTable(data);
+        }
+
+        function renderTable(data) {
             var html = `<table id="covidData" class="dataTable display cell-border compact hover nowrap row-border"><thead><tr>`;
             html += `<th>${labels['date']}</th>`;
             dataColumns.forEach((key) => {
@@ -131,7 +114,6 @@
                 paging: false,
                 searching: false,
                 ordering:  false,
-                // responsive: true,
             });
         }
     </script>
