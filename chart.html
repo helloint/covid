@@ -467,8 +467,8 @@
     function downloadTable() {
         html2canvas(document.querySelector("#regionGrid")).then(canvas => {
             var link = document.createElement('a');
-            link.download = "chart.png";
-            link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            link.download = "region.png";
+            link.href = canvas.toDataURL("image/png");
             link.click();
         });
     }
@@ -494,7 +494,7 @@
 
             var link = document.createElement('a');
             link.download = "chart.png";
-            link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            link.href = canvas.toDataURL("image/png");
             link.click();
         });
     }
