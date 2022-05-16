@@ -69,8 +69,21 @@ async function processHistory() {
     }
 }
 
+/**
+ * 忽略时区，强制获取中国（+0800）时间
+ * 如果当前时间在中国时区是：
+ * Mon May 16 2022 09:37:39 GMT+0800 (中国标准时间)
+ * 那么如果在美国时区，则会返回：
+ * Mon May 16 2022 09:37:07 GMT-0400 (北美东部夏令时间)
+ *
+ * @returns {Date}
+ */
+function now() {
+    return new Date(new Date().getTime() + (480 + new Date().getTimezoneOffset()) * 60 * 1000)
+}
+
 async function run() {
-    const date = parseDate(new Date((new Date()).valueOf() - 1000 * 60 * 60 * 24));
+    const date = parseDate(new Date(now().getTime() - 1000 * 60 * 60 * 24));
     const dailyFeed = `${__dirname}/data/daily.json`;
     const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
     const addressFeed = `${__dirname}/data/address.json`;
@@ -721,7 +734,9 @@ function parseAddress(content) {
 function parseDate(date) {
     var yyyy = date.getFullYear();
     var mm = date.getMonth() + 1;
+    date.set
     mm = mm >= 10 ? mm : '0' + mm;
+    // FIXME: 这里有时差问题。
     var dd = date.getDate();
     dd = dd >= 10 ? dd : '0' + dd;
     return `${yyyy}-${mm}-${dd}`;
