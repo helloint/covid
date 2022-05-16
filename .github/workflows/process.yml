@@ -1,7 +1,7 @@
 name: Process Data
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/5 7-14 * * *'
   workflow_dispatch:
 
 jobs:
