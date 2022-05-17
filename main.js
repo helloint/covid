@@ -53,7 +53,7 @@ async function main() {
             await getListPage();
             break;
         case 'shfb':
-            await getLatestTopicsFromSHFB();
+            await getLatestTopicsFromSHFB(true);
             break;
         case 'history':
             await processHistory();
@@ -83,13 +83,14 @@ function now() {
 }
 
 async function run() {
-    const date = parseDate(new Date(now().getTime() - 1000 * 60 * 60 * 24));
+    const yesterday = new Date(now().getTime() - 1000 * 60 * 60 * 24);
+    const yesterdayStr = parseDate(yesterday);
     const dailyFeed = `${__dirname}/data/daily.json`;
     const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
     const addressFeed = `${__dirname}/data/address.json`;
     const addressData = JSON.parse(fs.readFileSync(addressFeed, 'utf8'));
 
-    if (dailyData.date === date && addressData.date === date) {
+    if (dailyData.date === yesterdayStr && addressData.date === yesterdayStr) {
         console.log('Today data already generated. Quit!');
         return;
     }
@@ -97,11 +98,12 @@ async function run() {
     var topics = await getLatestTopicsFromSHFB();
     if (topics) {
         let topic = null;
-        if (dailyData.date !== date) {
+        var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
+        if (dailyData.date !== yesterdayStr) {
             topic = topics.find((item) => {
-                const regex = /(\d+)月(\d+)日（0-24时）上海新增本土确诊病例/;
+                const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海新增本土确诊病例');
                 const res = item.title.match(regex);
-                if (res && res.length === 3) {
+                if (res) {
                     return true;
                 }
             });
@@ -113,12 +115,12 @@ async function run() {
             }
         }
 
-        if (addressData.date !== date) {
+        if (addressData.date !== yesterdayStr) {
             topic = topics.find((item) => {
                 // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
-                const regex = /(\d+)月(\d+)日（0-24时）本市各区确诊病例、无症状感染者居住地信息/;
+                const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地信息');
                 const res = item.title.match(regex);
-                if (res && res.length === 3) {
+                if (res) {
                     return true;
                 }
             });
@@ -137,7 +139,7 @@ async function run() {
 /**
  * This will return latest 11 topics from 上海发布 wechat public account
  */
-async function getLatestTopicsFromSHFB() {
+async function getLatestTopicsFromSHFB(logInfo) {
     const url = 'https://mp.weixin.qq.com/cgi-bin/appmsg';
     const queryData = {
         action: 'list_ex',
@@ -160,6 +162,7 @@ async function getLatestTopicsFromSHFB() {
     if (response.status === 200) {
         if (response.data && response.data.app_msg_list) {
             const ret = response.data.app_msg_list.map((item) => {
+                logInfo && console.log(`title: ${item.title}\nurl: ${item.link}`);
                 return {title: item.title, url: item.link};
             });
             return ret;
