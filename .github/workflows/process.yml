@@ -1,7 +1,12 @@
 name: Process Data
 on:
+  push:
+    paths:
+      - 'main.js'
+      - 'config.js'
   schedule:
-    - cron: '*/5 7-14 * * *'
+    - cron: '*/5 23 * * *'
+    - cron: '*/5 0-6 * * *'
   workflow_dispatch:
 
 jobs:
