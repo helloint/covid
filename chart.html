@@ -107,7 +107,7 @@
         }
     </style>
     <!-- Include the ECharts file you just downloaded -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+    <script src="js/echarts.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="js/html2canvas.min.js"></script>
     <script src="js/common.js"></script>
@@ -467,7 +467,7 @@
     function downloadTable() {
         html2canvas(document.querySelector("#regionGrid")).then(canvas => {
             var link = document.createElement('a');
-            link.download = "region.png";
+            link.download = `region.${getTimestamp()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
         });
@@ -490,10 +490,17 @@
             ctx.drawImage(canvas3, 0, titleCanvas.height + canvas0.height + canvas1.height + canvas2.height);
 
             var link = document.createElement('a');
-            link.download = "chart.png";
+            link.download = `chart.${getTimestamp()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
         });
+    }
+
+    function getTimestamp() {
+        var now = new Date();
+        var fixTen = (num) => num < 10 ? '0' + num : num;
+        return [now.getFullYear(), fixTen(now.getMonth()), fixTen(now.getDate()),
+            fixTen(now.getHours()), fixTen(now.getMinutes()), fixTen(now.getSeconds())].join('');
     }
 </script>
 </body>
