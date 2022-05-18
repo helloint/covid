@@ -296,8 +296,6 @@
                     }
                 ],
             });
-            chart0.setOption(confirmChartOption);
-
             var shaichaChartOption = $.extend(true, {}, commonChartOption, {
                 title: {
                     text: '社会面 阳性 + 确诊',
@@ -331,8 +329,6 @@
                     }
                 ],
             });
-            chart1.setOption(shaichaChartOption);
-
             var curedChartOption = $.extend(true, {}, commonChartOption, {
                 title: {
                     text: '在院治疗 ｜累计治愈',
@@ -365,8 +361,6 @@
                     }
                 ],
             });
-            // chart2.setOption(curedChartOption);
-
             var deathChartOption = $.extend(true, {}, commonChartOption, {
                 title: {
                     text: '死亡病例',
@@ -388,7 +382,15 @@
                     },
                 ],
             });
-            chart2.setOption(deathChartOption);
+            var options = [confirmChartOption, shaichaChartOption, deathChartOption];
+
+            const $container = $('#chartContainer');
+            options.forEach((option, i) => {
+                $container.append(`<div id="chart${i}" class="chart"></div>`);
+                const chart = echarts.init(document.getElementById('chart' + i), 'dark');
+                chart.setOption(option);
+                charts.push(chart);
+            });
         }
 
         function processTableData(data) {
@@ -457,15 +459,10 @@
     <div class="chart-title-center"><span id="date" class="chart-title-date"></span> 上海</div>
     <div class="chart-title-right">by helloint</div>
 </div>
-<div id="chart0" class="chart"></div>
-<div id="chart1" class="chart"></div>
-<div id="chart2" class="chart"></div>
-<div id="chart3" class="chart"></div>
+<div id="chartContainer"></div>
 <script type="text/javascript">
-    var chart0 = echarts.init(document.getElementById('chart0'), 'dark');
-    var chart1 = echarts.init(document.getElementById('chart1'), 'dark');
-    var chart2 = echarts.init(document.getElementById('chart2'), 'dark');
-    var chart3 = echarts.init(document.getElementById('chart3'), 'dark');
+    const charts = [];
+
     function downloadTable() {
         html2canvas(document.querySelector("#regionGrid")).then(canvas => {
             var link = document.createElement('a');
@@ -477,21 +474,28 @@
 
     function downloadChart() {
         html2canvas(document.querySelector("#chartTitle")).then(titleCanvas => {
-            var canvas0 = $('#chart0 canvas')[0];
-            var canvas1 = $('#chart1 canvas')[0];
-            var canvas2 = $('#chart2 canvas')[0];
-            var canvas = document.createElement('canvas');
-            canvas.width = titleCanvas.width;
-            canvas.height = titleCanvas.height + canvas0.height + canvas1.height + canvas2.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(titleCanvas, 0, 0);
-            ctx.drawImage(canvas0, 0, titleCanvas.height);
-            ctx.drawImage(canvas1, 0, titleCanvas.height + canvas0.height);
-            ctx.drawImage(canvas2, 0, titleCanvas.height + canvas0.height + canvas1.height);
+            // Calculate total height first
+            let totalHeight = titleCanvas.height;
+            charts.forEach(chart => {
+                totalHeight = totalHeight + chart.getRenderedCanvas().height;
+            });
+            const bigCanvas = document.createElement('canvas');
+            bigCanvas.width = titleCanvas.width;
+            bigCanvas.height = totalHeight;
 
-            var link = document.createElement('a');
+            // Draw canvas one by one
+            const ctx = bigCanvas.getContext('2d');
+            ctx.drawImage(titleCanvas, 0, 0);
+            let currentHeightOffset = titleCanvas.height;
+            charts.forEach(chart => {
+                const canvas = chart.getRenderedCanvas();
+                ctx.drawImage(canvas, 0, currentHeightOffset);
+                currentHeightOffset = currentHeightOffset + canvas.height;
+            });
+
+            const link = document.createElement('a');
             link.download = `chart.${getTimestamp()}.png`;
-            link.href = canvas.toDataURL("image/png");
+            link.href = bigCanvas.toDataURL("image/png");
             link.click();
         });
     }
