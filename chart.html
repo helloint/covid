@@ -7,9 +7,9 @@
         body {
             font: 12px Arial, Helvetica, sans-serif;
         }
-        .chart {
+        .chart-wrap {
+            position: relative;
             width: 800px;
-            height: 350px;
         }
         .chart-title {
             width: 800px;
@@ -35,7 +35,15 @@
             vertical-align: bottom;
             padding-right: 10px;
         }
+        .chart-container {
+            width: 800px;
+            height: 350px;
+        }
 
+        .region-wrap {
+            position: relative;
+            width: 800px;
+        }
         #regionGrid {
             font-size: 14px;
             border-collapse: collapse;
@@ -105,6 +113,12 @@
         #regionGrid .diff.minus {
             color: green;
         }
+        .download {
+            cursor: pointer;
+            position: absolute;
+            top: 0;
+            right: -35px;
+        }
     </style>
     <!-- Include the ECharts file you just downloaded -->
     <script src="js/echarts.min.js"></script>
@@ -114,8 +128,8 @@
     <script src="js/chart.js"></script>
 </head>
 <body onload="init()">
-<a href="javascript:void(0);" onclick="downloadTable();"><img src="images/download.svg" width="32" height="32"></a>
-<div id="regionsContainer" class="table">
+<div id="regionsContainer" class="region-wrap">
+    <img src="images/download.svg" class="download" onclick="downloadTable();" width="32" height="32">
     <table id="regionGrid">
         <thead>
         <tr>
@@ -135,12 +149,14 @@
         <tbody></tbody>
     </table>
 </div>
-<a href="javascript:void(0);" onclick="downloadChart();"><img src="images/download.svg" width="32" height="32"></a>
-<div id="chartTitle" class="chart-title">
-    <div class="chart-title-left"></div>
-    <div class="chart-title-center"><span id="date" class="chart-title-date"></span> 上海</div>
-    <div class="chart-title-right">by helloint</div>
+<div id="chartWrap" class="chart-wrap">
+    <img src="images/download.svg" class="download" onclick="downloadChart();" width="32" height="32">
+    <div id="chartTitle" class="chart-title">
+        <div class="chart-title-left"></div>
+        <div class="chart-title-center"><span id="date" class="chart-title-date"></span> 上海</div>
+        <div class="chart-title-right">by helloint</div>
+    </div>
+    <div id="chartsContainer"></div>
 </div>
-<div id="chartContainer"></div>
 </body>
 </html>

@@ -4,7 +4,7 @@ function init() {
         .then(data => {
             extendCalcData(data);
             $('#date').text(formatDate(Object.keys(data.daily)[Object.keys(data.daily).length - 1]));
-            renderUI(processTableData(data));
+            renderCharts(processTableData(data));
             renderRegion(data);
         });
 }
@@ -118,6 +118,7 @@ function getDailyData(data, key) {
 }
 
 const charts = [];
+const chartsDownloadDefaultSetting = [1, 1, 0, 1];
 
 var commonChartOption = {
     title: {
@@ -152,7 +153,7 @@ var commonChartOption = {
     }
 };
 
-function renderUI(data) {
+function renderCharts(data) {
     var confirmChartOption = $.extend(true, {}, commonChartOption, {
         title: {
             text: '确诊 ｜ 无症状',
@@ -270,14 +271,17 @@ function renderUI(data) {
             },
         ],
     });
-    var options = [confirmChartOption, shaichaChartOption, deathChartOption];
+    var options = [confirmChartOption, shaichaChartOption, curedChartOption, deathChartOption];
 
-    const $container = $('#chartContainer');
+    const $container = $('#chartsContainer');
     options.forEach((option, i) => {
-        $container.append(`<div id="chart${i}" class="chart"></div>`);
+        $container.append(`<div id="chart${i}" class="chart-container"></div>`);
         const chart = echarts.init(document.getElementById('chart' + i), 'dark');
         chart.setOption(option);
         charts.push(chart);
+
+        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice" value="${i}"
+            ${chartsDownloadDefaultSetting[i] ? 'checked="checked"' : ''} style="position: absolute; right: -29px; top: ${35 + i * 20}px;"/>`);
     });
 }
 
@@ -307,11 +311,17 @@ function downloadTable() {
 }
 
 function downloadChart() {
+    let downloadSettings = [];
+    $('input[name=downloadChoice]').each((i, item) => {
+        downloadSettings.push($(item).prop('checked') ? 1 : 0);
+    });
     html2canvas(document.querySelector("#chartTitle")).then(titleCanvas => {
         // Calculate total height first
         let totalHeight = titleCanvas.height;
-        charts.forEach(chart => {
-            totalHeight = totalHeight + chart.getRenderedCanvas().height;
+        charts.forEach((chart, i) => {
+            if (downloadSettings[i]) {
+                totalHeight = totalHeight + chart.getRenderedCanvas().height;
+            }
         });
         const bigCanvas = document.createElement('canvas');
         bigCanvas.width = titleCanvas.width;
@@ -321,10 +331,12 @@ function downloadChart() {
         const ctx = bigCanvas.getContext('2d');
         ctx.drawImage(titleCanvas, 0, 0);
         let currentHeightOffset = titleCanvas.height;
-        charts.forEach(chart => {
-            const canvas = chart.getRenderedCanvas();
-            ctx.drawImage(canvas, 0, currentHeightOffset);
-            currentHeightOffset = currentHeightOffset + canvas.height;
+        charts.forEach((chart, i) => {
+            if (downloadSettings[i]) {
+                const canvas = chart.getRenderedCanvas();
+                ctx.drawImage(canvas, 0, currentHeightOffset);
+                currentHeightOffset = currentHeightOffset + canvas.height;
+            }
         });
 
         const link = document.createElement('a');
