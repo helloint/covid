@@ -118,17 +118,19 @@ function getDailyData(data, key) {
 }
 
 const charts = [];
-const chartsDownloadDefaultSetting = [1, 1, 0, 1];
+const chartsDownloadDefaultSetting = [1, 1, 1, 1];
 
 var commonChartOption = {
     title: {
-        padding: [5, 20]
+        padding: [5, 20],
+        left: 'center',
     },
     tooltip: {
         trigger: 'axis',
     },
     legend: {
-        top: '15',
+        top: 15,
+        left: 20,
     },
     grid: {
         left: '3%',
@@ -143,9 +145,10 @@ var commonChartOption = {
     },
     xAxis: {
         type: 'category',
-        boundaryGap: false,
+        boundaryGap: true,
         axisLabel: {
-            interval:0, rotate:40,
+            interval:0,
+            rotate:40,
         }
     },
     yAxis: {
@@ -156,13 +159,10 @@ var commonChartOption = {
 function renderCharts(data) {
     var confirmChartOption = $.extend(true, {}, commonChartOption, {
         title: {
-            text: '确诊 ｜ 无症状',
+            text: '确诊 & 无症状',
         },
         xAxis: {
-            data: Object.keys(data.daily),
-        },
-        legend: {
-            data: ['确诊', '无症状'],
+            data: Object.keys(data.recentDaily),
         },
         series: [
             {
@@ -172,7 +172,8 @@ function renderCharts(data) {
                     show: true,
                 },
                 color: '#4f6fc7',
-                data: getDailyData(data.daily, 'confirm'),
+                smooth: true,
+                data: getDailyData(data.recentDaily, 'confirm'),
             },
             {
                 name: '无症状',
@@ -181,23 +182,21 @@ function renderCharts(data) {
                     show: true,
                 },
                 color: '#e58e51',
-                data: getDailyData(data.daily, 'wzz'),
+                smooth: true,
+                data: getDailyData(data.recentDaily, 'wzz'),
             }
         ],
     });
     var shaichaChartOption = $.extend(true, {}, commonChartOption, {
         title: {
-            text: '社会面 阳性 + 确诊',
+            text: '风险排查（社会面） 确诊 & 无症状',
         },
         xAxis: {
-            data: Object.keys(data.daily),
-        },
-        legend: {
-            data: ['风险排查确诊', '风险排查无症状'],
+            data: Object.keys(data.recentDaily),
         },
         series: [
             {
-                name: '风险排查确诊',
+                name: '确诊',
                 type: 'line',
                 label: {
                     show: true,
@@ -205,28 +204,30 @@ function renderCharts(data) {
                     // offset: [5, -6]
                 },
                 color: '#4f6fc7',
-                data: getDailyData(data.daily, 'confirm_shaicha'),
+                smooth: true,
+                data: getDailyData(data.recentDaily, 'confirm_shaicha'),
             },
             {
-                name: '风险排查无症状',
+                name: '无症状',
                 type: 'line',
                 label: {
                     show: true,
                 },
                 color: '#e58e51',
-                data: getDailyData(data.daily, 'wzz_shaicha'),
+                smooth: true,
+                data: getDailyData(data.recentDaily, 'wzz_shaicha'),
             }
         ],
     });
     var curedChartOption = $.extend(true, {}, commonChartOption, {
         title: {
-            text: '在院治疗 ｜累计治愈',
+            text: '在院治疗 & 累计治愈',
         },
         xAxis: {
-            data: Object.keys(data.daily),
-        },
-        legend: {
-            data: ['在院治疗', '累计治愈'],
+            data: Object.keys(data.recentDaily),
+            axisLabel: {
+                interval: 'auto',
+            }
         },
         series: [
             {
@@ -234,9 +235,10 @@ function renderCharts(data) {
                 type: 'bar',
                 label: {
                     show: true,
+                    position: 'top',
                 },
                 color: '#4f6fc7',
-                data: getDailyData(data.daily, 'curr_confirm'),
+                data: getDailyData(data.recentDaily, 'curr_confirm'),
             },
             {
                 name: '累计治愈',
@@ -246,7 +248,7 @@ function renderCharts(data) {
                     position: 'top',
                 },
                 color: '#e58e51',
-                data: getDailyData(data.daily, 'total_cured'),
+                data: getDailyData(data.recentDaily, 'total_cured'),
             }
         ],
     });
@@ -255,7 +257,7 @@ function renderCharts(data) {
             text: '死亡病例',
         },
         xAxis: {
-            data: Object.keys(data.daily),
+            data: Object.keys(data.recentDaily),
         },
         series: [
             {
@@ -267,11 +269,102 @@ function renderCharts(data) {
                     // offset: [5, -6]
                 },
                 color: '#4f6fc7',
-                data: getDailyData(data.daily, 'death'),
+                data: getDailyData(data.recentDaily, 'death'),
             },
         ],
     });
-    var options = [confirmChartOption, shaichaChartOption, curedChartOption, deathChartOption];
+    var completeConfirmCuredChartOption = $.extend(true, {}, commonChartOption, {
+        title: {
+            text: '本轮疫情：确诊 & 治愈',
+        },
+        xAxis: {
+            data: Object.keys(data.daily),
+            axisLabel: {
+                interval: 'auto',
+            }
+        },
+        series: [
+            {
+                name: '确诊',
+                type: 'line',
+                color: '#4f6fc7',
+                showSymbol: false,
+                smooth: true,
+                data: getDailyData(data.daily, 'confirm'),
+            },
+            {
+                name: '治愈',
+                type: 'line',
+                color: '#e58e51',
+                showSymbol: false,
+                data: getDailyData(data.daily, 'cured'),
+            }
+        ],
+    });
+    var completeShaichaChartOption = $.extend(true, {}, commonChartOption, {
+        title: {
+            text: '本轮疫情：风险排查 & 阳性总数',
+        },
+        xAxis: {
+            data: Object.keys(data.daily),
+            axisLabel: {
+                interval: 'auto',
+            }
+        },
+        series: [
+            {
+                name: '风险排查',
+                type: 'line',
+                color: '#4f6fc7',
+                showSymbol: false,
+                data: getDailyData(data.daily, 'shaicha'),
+            },
+            {
+                name: '阳性总数',
+                type: 'line',
+                color: '#e58e51',
+                showSymbol: false,
+                data: getDailyData(data.daily, 'total'),
+            }
+        ],
+    });
+    var completeConfirmWzzChartOption = $.extend(true, {}, commonChartOption, {
+        title: {
+            text: '本轮疫情：确诊 & 无症状',
+        },
+        xAxis: {
+            data: Object.keys(data.daily),
+            axisLabel: {
+                interval: 'auto',
+            }
+        },
+        series: [
+            {
+                name: '确诊',
+                type: 'line',
+                color: '#4f6fc7',
+                showSymbol: false,
+                data: getDailyData(data.daily, 'confirm'),
+            },
+            {
+                name: '无症状',
+                type: 'line',
+                color: '#e58e51',
+                showSymbol: false,
+                data: getDailyData(data.daily, 'wzz'),
+            }
+        ],
+    });
+    // TODO: 增加数据块[【本轮疫情】新增确诊 +82，新增无症状，累计确诊 ，累计无症状]
+    var options = [
+        confirmChartOption,
+        shaichaChartOption,
+        curedChartOption,
+        deathChartOption,
+        completeConfirmCuredChartOption,
+        completeShaichaChartOption,
+        completeConfirmWzzChartOption
+    ];
 
     const $container = $('#chartsContainer');
     options.forEach((option, i) => {
@@ -286,19 +379,22 @@ function renderCharts(data) {
 }
 
 function processTableData(data) {
-    var ret = {};
+    var daily = {};
     // 最近20天
+    var recentDayLimit = 20;
+    var recentDaily = {};
     var totalNum = Object.keys(data.daily).length;
     var index = 0;
     Object.entries(data.daily).forEach(([date, dailyData]) => {
         index++;
-        if (index > totalNum - 20) {
-            var dateStr = parseInt(date.split('-')[1], 10) + '月' + parseInt(date.split('-')[2], 10) + '日';
-            ret[dateStr] = dailyData;
+        var dateStr = parseInt(date.split('-')[1], 10) + '月' + parseInt(date.split('-')[2], 10) + '日';
+        if (index > totalNum - recentDayLimit) {
+            recentDaily[dateStr] = dailyData;
         }
+        daily[dateStr] = dailyData;
     });
 
-    return {total: data.total, daily: ret};
+    return {total: data.total, daily: daily, recentDaily: recentDaily};
 }
 
 function downloadTable() {
