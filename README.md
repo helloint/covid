@@ -1,18 +1,26 @@
 # covid shanghai
-## map
-<https://helloint.xyz/covid/map.html>
+## product
+- Map: <https://helloint.xyz/covid/map.html>
+- Chart: <https://helloint.xyz/covid/chart.html>
+- Grid: <https://helloint.xyz/covid/grid.html>
+
+## introduction
+知乎：[上海疫情地图数据报表的处理和自动化](https://zhuanlan.zhihu.com/p/515840359)
 
 ## data process
 `node main.js [type] [url]`  
 For example:
 ```
-node main.js address http://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654534451&idx=2&sn=e598f4d52935e30bc0d3e25b2278a7f2&chksm=bd31e6488a466f5e4719a627375d5523858b12d1e414cef6c05e334423cf7c1a27a656fd92d8&mpshare=1&scene=23&srcid=0507dpTw4aGZn31mvL0y6jLp&sharer_sharetime=1651905829258&sharer_shareid=b547167d055d935fd3f9f56094533f76#rd
+node main.js daily https://mp.weixin.qq.com/s/zwbcfAnrreYuw9tUyRJspA
 ```
-This will generate `2022/05/06` addresses into `./data/daily.json`
+This will generate `2022/05/06` addresses into `./data/address.json`
 
-`node main.js `
+```
+node main.js run
+```
+This will detect if there is new daily and address report from 《上海发布》. If yes, process the data and upload.
 
-## types
+## [types]
 * `run` (no params)  
 抓取《上海发布》公众号文章，获取当日 daily num 和 address 信息。
 * `list` (no params)  
