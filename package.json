@@ -4,8 +4,7 @@
   "description": "node main.js [url]",
   "main": "main.js",
   "scripts": {
-    "start": "node ./main.js run",
-    "upload": "node ./git.js"
+    "start": "node ./server/main.js run"
   },
   "author": "",
   "license": "ISC",

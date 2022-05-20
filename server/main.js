@@ -20,6 +20,7 @@ const fs = require('fs');
 const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 const config = require('./config.js');
+const dataFilePath = `${__dirname}/../data`;
 
 if (!config.token) {
     config.token = process.env.TOKEN;
@@ -85,9 +86,9 @@ function now() {
 async function run() {
     const yesterday = new Date(now().getTime() - 1000 * 60 * 60 * 24);
     const yesterdayStr = parseDate(yesterday);
-    const dailyFeed = `${__dirname}/data/daily.json`;
+    const dailyFeed = `${dataFilePath}/daily.json`;
     const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
-    const addressFeed = `${__dirname}/data/address.json`;
+    const addressFeed = `${dataFilePath}/address.json`;
     const addressData = JSON.parse(fs.readFileSync(addressFeed, 'utf8'));
 
     if (dailyData.date === yesterdayStr && addressData.date === yesterdayStr) {
@@ -400,8 +401,8 @@ async function processDailyData(url, showRegions = true) {
         );
     });
 
-    const dailyFeed = `${__dirname}/data/daily.json`;
-    const dailyTotalFeed = `${__dirname}/data/dailyTotal.json`;
+    const dailyFeed = `${dataFilePath}/daily.json`;
+    const dailyTotalFeed = `${dataFilePath}/dailyTotal.json`;
     const dailyTotalData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
     data.date = parseDate(date);
     dailyTotalData.daily[data.date] = data.daily;
@@ -454,7 +455,7 @@ async function getRegionStatusList(url) {
     });
 
     console.log(`count: ${count}`);
-    fs.writeFileSync(`${__dirname}/data/region.json`, JSON.stringify(ret), 'utf8');
+    fs.writeFileSync(`${dataFilePath}/region.json`, JSON.stringify(ret), 'utf8');
 }
 
 async function getListPage() {
@@ -490,11 +491,11 @@ function processAddressFromWechatMh(url) {
 
 function writeDailyAddressesToFile(date, addresses) {
     if (addresses) {
-        const dailyTotalFeed = `${__dirname}/data/addressTotal.json`;
+        const dailyTotalFeed = `${dataFilePath}/addressTotal.json`;
         const dailyData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
         dailyData[date] = addresses;
         fs.writeFileSync(dailyTotalFeed, JSON.stringify(dailyData), 'utf8');
-        const dailyFeed = `${__dirname}/data/address.json`;
+        const dailyFeed = `${dataFilePath}/address.json`;
         fs.writeFileSync(dailyFeed, JSON.stringify({date, addresses}), 'utf8');
     }
 }
