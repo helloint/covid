@@ -55,6 +55,7 @@ function initUI() {
         date.setDate(date.getDate()-1);
     }
 
+    $('#districtSelector').append(`<option>上海市</option>`);
     districts.forEach(name => {
         $('#districtSelector').append(`<option ${name === '闵行区' ? 'selected': ''}>${name}</option>`);
     });
@@ -98,8 +99,14 @@ function initUI() {
         getPoint(e.target.value, function(point){
             if (point) {
                 map.setCenter(point, {noAnimation: false});
+                if (e.target.value === '上海市') {
+                    map.setZoom(12);
+                } else {
+                    map.setZoom(14);
+                }
             }
         }, "上海市");
+        render();
     });
 }
 
@@ -137,8 +144,11 @@ function renderAddresses(date, addresses) {
     // 直接画点
     // addresses.forEach(renderAddress);
     // 根据点, 获取小区, 如果有小区数据, 优先画小区, 否则降级到点
+    var districtName = $('#districtSelector').val();
     addresses.forEach((address) => {
-        renderEstate(address);
+        if (districtName === '上海市' || address.startsWith(districtName)) {
+            renderEstate(address);
+        }
     });
     document.getElementById('pageTitle').innerText = date;
 }
