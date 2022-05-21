@@ -133,7 +133,7 @@ function getDailyData(data, key) {
 }
 
 const charts = [];
-const chartsDownloadDefaultSetting = [1, 1, 1, 1];
+const chartsDownloadDefaultSetting = [[1, 1, 1], [0, 0, 0, 1, 1, 1]];
 
 var commonChartOption = {
     title: {
@@ -391,8 +391,10 @@ function renderCharts(data) {
         chart.setOption(option);
         charts.push(chart);
 
-        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice" value="${i}"
-            ${chartsDownloadDefaultSetting[i] ? 'checked="checked"' : ''} style="position: absolute; right: -29px; top: ${35 + i * 20}px;"/>`);
+        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice0" value="${i}"
+            ${chartsDownloadDefaultSetting[0][i] ? 'checked="checked"' : ''} style="position: absolute; right: -29px; top: ${35 + i * 20}px;"/>`);
+        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice1" value="${i}"
+            ${chartsDownloadDefaultSetting[1][i] ? 'checked="checked"' : ''} style="position: absolute; right: -64px; top: ${35 + i * 20}px;"/>`);
     });
 }
 
@@ -424,17 +426,18 @@ function downloadTable() {
     });
 }
 
-function downloadChart() {
+function downloadChart(index) {
     let downloadSettings = [];
-    $('input[name=downloadChoice]').each((i, item) => {
+    $('input[name=downloadChoice' + index + ']').each((i, item) => {
         downloadSettings.push($(item).prop('checked') ? 1 : 0);
     });
     html2canvas(document.querySelector("#chartTitle")).then(titleCanvas => {
         html2canvas(document.querySelector("#kanban")).then(kanbanCanvas => {
             // Calculate total height first
-            let totalHeight = titleCanvas.height + kanbanCanvas.height;
+            let totalHeight = titleCanvas.height;
+            if (downloadSettings[0]) totalHeight += kanbanCanvas.height;
             charts.forEach((chart, i) => {
-                if (downloadSettings[i]) {
+                if (downloadSettings[i + 1]) {
                     totalHeight = totalHeight + chart.getRenderedCanvas().height;
                 }
             });
@@ -445,10 +448,14 @@ function downloadChart() {
             // Draw canvas one by one
             const ctx = bigCanvas.getContext('2d');
             ctx.drawImage(titleCanvas, 0, 0);
-            ctx.drawImage(kanbanCanvas, 0, titleCanvas.height);
-            let currentHeightOffset = titleCanvas.height + kanbanCanvas.height;
+            let currentHeightOffset = titleCanvas.height;
+            if (downloadSettings[0]) {
+                ctx.drawImage(kanbanCanvas, 0, titleCanvas.height);
+                currentHeightOffset += kanbanCanvas.height;
+            }
+
             charts.forEach((chart, i) => {
-                if (downloadSettings[i]) {
+                if (downloadSettings[i + 1]) {
                     const canvas = chart.getRenderedCanvas();
                     ctx.drawImage(canvas, 0, currentHeightOffset);
                     currentHeightOffset = currentHeightOffset + canvas.height;

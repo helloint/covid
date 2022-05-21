@@ -32,6 +32,7 @@
         #regionGrid .diff.plus {color:red;}
         #regionGrid .diff.minus {color:green;}
         .download {cursor:pointer;position:absolute;top:0;right:-35px;}
+        .download2 {cursor:pointer;position:absolute;top:0;right:-70px;}
 
         .block-wrap {width: 800px; background-color: #100c28; padding-bottom: 10px;}
         .block-title {text-align: center; font-size: 28px; color: white; font-weight: bold; padding-bottom: 10px;}
@@ -96,7 +97,8 @@
     </table>
 </div>
 <div id="chartWrap" class="chart-wrap">
-    <img src="images/download.svg" class="download" onclick="downloadChart();" width="32" height="32">
+    <img src="images/download.svg" class="download" onclick="downloadChart(0);" width="32" height="32">
+    <img src="images/download.svg" class="download2" onclick="downloadChart(1);" width="32" height="32">
     <div id="chartTitle" class="chart-title">
         <div class="chart-title-left"></div>
         <div class="chart-title-center"><span id="date" class="chart-title-date"></span> 上海</div>
