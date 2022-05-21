@@ -7,9 +7,11 @@
         body {font:12px Arial, Helvetica, sans-serif;}
         .chart-wrap {position:relative;width:800px;}
         .chart-title {width:800px;height:80px;color:#eff2f9;line-height:80px;background-color:#100c28;display:flex;}
-        .chart-title .chart-title-center {width:600px;font-size:40px;text-align:center;}
-        .chart-title .chart-title-left {width:100px;padding-left:20px;}
-        .chart-title .chart-title-right {width:100px;font-size:12px;text-align:right;vertical-align:bottom;padding-right:20px;}
+        .chart-title .chart-title-center {width:500px;font-size:40px;text-align:center;}
+        .chart-title .chart-title-left {width:150px;padding-left:20px;}
+        .chart-title .chart-title-right {width:150px;font-size:12px;text-align:right;vertical-align:bottom;padding-right:20px;}
+        .chart-title .chart-title-right a {color: white; text-decoration: none;}
+        .chart-title .chart-title-right a:hover {color: white; text-decoration: underline;}
         .chart-container {width:800px;height:350px;}
 
         .region-wrap {position:relative;width:800px;}
@@ -19,7 +21,9 @@
         #regionGrid th {color:white;border-color:white;background-color:#366dbb;}
         #regionGrid .corner {border-right:0;}
         #regionGrid .title {width:635px;height:31px;font-size:30px;font-weight:normal;border-left:0;border-right:0;}
-        #regionGrid .author {border-left:0;font-size:12px;font-weight:normal;text-align:right;padding-right:10px;vertical-align:bottom;}
+        #regionGrid .author {border-left:0;font-size:12px;font-weight:normal;text-align:right;padding-right:10px;}
+        #regionGrid .author a {color: white; text-decoration: none;}
+        #regionGrid .author a:hover {color: white; text-decoration: underline;}
         #regionGrid .regions {width:78px;}
         #regionGrid .total-title {width:78px;}
         #regionGrid .num {width:48px;}
@@ -80,7 +84,7 @@
     <table id="regionGrid">
         <thead>
         <tr>
-            <th class="corner"></th><th colspan="8" id="regionGridDate" class="title">-</th><th class="author">by helloint</th>
+            <th class="corner"></th><th colspan="8" id="regionGridDate" class="title">-</th><th class="author">by <a href="https://github.com/helloint/covid">@helloint</a></th>
         </tr>
         <tr>
             <th rowspan="2" class="regions">各区</th><th rowspan="2" class="total-title">总数</th><th colspan="3">确诊</th><th colspan="2">无症状</th>
@@ -100,9 +104,9 @@
     <img src="images/download.svg" class="download" onclick="downloadChart(0);" width="32" height="32">
     <img src="images/download.svg" class="download2" onclick="downloadChart(1);" width="32" height="32">
     <div id="chartTitle" class="chart-title">
-        <div class="chart-title-left"></div>
+        <div class="chart-title-left">📰《疫情早早报》</div>
         <div class="chart-title-center"><span id="date" class="chart-title-date"></span> 上海</div>
-        <div class="chart-title-right">by helloint</div>
+        <div class="chart-title-right">by <a href="https://github.com/helloint/covid">@helloint</a></div>
     </div>
     <div id="kanban" class="block-wrap">
         <div class="block-title">看板</div>
