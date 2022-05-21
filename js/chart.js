@@ -4,9 +4,24 @@ function init() {
         .then(data => {
             extendCalcData(data);
             $('#date').text(formatDate(Object.keys(data.daily)[Object.keys(data.daily).length - 1]));
+            renderKanban(data);
             renderCharts(processTableData(data));
             renderRegion(data);
         });
+}
+
+function renderKanban(data) {
+    const dailyData = data.daily;
+    const todayDate = Object.keys(dailyData)[Object.keys(dailyData).length - 1];
+    const dailyDay0 = dailyData[todayDate];
+    $('#kanban .col1 .num').text('+' + dailyDay0.confirm);
+    $('#kanban .col2 .num').text('+' + dailyDay0.wzz);
+    $('#kanban .col3 .num').text('+' + dailyDay0.cured);
+    $('#kanban .col4 .num').text('+' + dailyDay0.death);
+    $('#kanban .col5 .num').text(dailyDay0.total_confirm);
+    $('#kanban .col6 .num').text(dailyDay0.total_wzz_correct);
+    $('#kanban .col7 .num').text(dailyDay0.total_cured);
+    $('#kanban .col8 .num').text(dailyDay0.total_death);
 }
 
 function renderRegion(data) {
@@ -51,11 +66,11 @@ function renderRegion(data) {
         tbody += `<tr class="region region-${region.name}">
                     <th>${region.name}</th>
                     <td class="total">${region.today}</td>
-                    <td class="confirm num-confirm-bihuan">${region.confirm_bihuan}</td>
-                    <td class="confirm num-zhuangui">${region.zhuangui}</td>
-                    <td class="confirm num-confirm-shaicha">${region.confirm_shaicha}</td>
-                    <td class="wzz num-wzz-bihuan">${region.wzz_bihuan}</td>
-                    <td class="wzz num-wzz-shaicha">${region.wzz_shaicha}</td>
+                    <td class="confirm num-confirm-bihuan ${!region.confirm_bihuan ? 'zero' : ''}">${region.confirm_bihuan}</td>
+                    <td class="confirm num-zhuangui ${!region.zhuangui ? 'zero' : ''}">${region.zhuangui}</td>
+                    <td class="confirm num-confirm-shaicha ${!region.confirm_shaicha ? 'zero' : ''}">${region.confirm_shaicha}</td>
+                    <td class="wzz num-wzz-bihuan ${!region.wzz_bihuan ? 'zero' : ''}">${region.wzz_bihuan}</td>
+                    <td class="wzz num-wzz-shaicha ${!region.wzz_shaicha ? 'zero' : ''}">${region.wzz_shaicha}</td>
                     <td class="diff num-diff-1 ${calcPercent(region.today, region.yesterday)[0]}">${calcPercent(region.today, region.yesterday)[1]}</td>
                     <td class="diff num-diff-3 ${calcPercent(region.today, region.avg3)[0]}">${calcPercent(region.today, region.avg3)[1]}</td>
                     <td class="diff num-diff-7 ${calcPercent(region.today, region.avg7)[0]}">${calcPercent(region.today, region.avg7)[1]}</td>
@@ -124,6 +139,9 @@ var commonChartOption = {
     title: {
         padding: [5, 20],
         left: 'center',
+        textStyle: {
+            fontSize: 28,
+        }
     },
     tooltip: {
         trigger: 'axis',
@@ -171,7 +189,7 @@ function renderCharts(data) {
                 label: {
                     show: true,
                 },
-                color: '#4f6fc7',
+                color: '#e47d7e',
                 smooth: true,
                 data: getDailyData(data.recentDaily, 'confirm'),
             },
@@ -181,7 +199,7 @@ function renderCharts(data) {
                 label: {
                     show: true,
                 },
-                color: '#e58e51',
+                color: '#fdc368',
                 smooth: true,
                 data: getDailyData(data.recentDaily, 'wzz'),
             }
@@ -203,7 +221,7 @@ function renderCharts(data) {
                     position: 'inside',
                     // offset: [5, -6]
                 },
-                color: '#4f6fc7',
+                color: '#e47d7e',
                 smooth: true,
                 data: getDailyData(data.recentDaily, 'confirm_shaicha'),
             },
@@ -213,7 +231,7 @@ function renderCharts(data) {
                 label: {
                     show: true,
                 },
-                color: '#e58e51',
+                color: '#fdc368',
                 smooth: true,
                 data: getDailyData(data.recentDaily, 'wzz_shaicha'),
             }
@@ -221,7 +239,7 @@ function renderCharts(data) {
     });
     var curedChartOption = $.extend(true, {}, commonChartOption, {
         title: {
-            text: '在院治疗 & 累计治愈',
+            text: '在院治疗 & 新增治愈',
         },
         xAxis: {
             data: Object.keys(data.recentDaily),
@@ -237,18 +255,18 @@ function renderCharts(data) {
                     show: true,
                     position: 'top',
                 },
-                color: '#4f6fc7',
+                color: '#e47d7e',
                 data: getDailyData(data.recentDaily, 'curr_confirm'),
             },
             {
-                name: '累计治愈',
+                name: '新增治愈',
                 type: 'bar',
                 label: {
                     show: true,
                     position: 'top',
                 },
-                color: '#e58e51',
-                data: getDailyData(data.recentDaily, 'total_cured'),
+                color: '#6bdab4',
+                data: getDailyData(data.recentDaily, 'cured'),
             }
         ],
     });
@@ -268,7 +286,7 @@ function renderCharts(data) {
                     position: 'top',
                     // offset: [5, -6]
                 },
-                color: '#4f6fc7',
+                color: '#4e5a65',
                 data: getDailyData(data.recentDaily, 'death'),
             },
         ],
@@ -287,7 +305,7 @@ function renderCharts(data) {
             {
                 name: '确诊',
                 type: 'line',
-                color: '#4f6fc7',
+                color: '#e47d7e',
                 showSymbol: false,
                 smooth: true,
                 data: getDailyData(data.daily, 'confirm'),
@@ -295,7 +313,7 @@ function renderCharts(data) {
             {
                 name: '治愈',
                 type: 'line',
-                color: '#e58e51',
+                color: '#6bdab4',
                 showSymbol: false,
                 data: getDailyData(data.daily, 'cured'),
             }
@@ -315,14 +333,14 @@ function renderCharts(data) {
             {
                 name: '风险排查',
                 type: 'line',
-                color: '#4f6fc7',
+                color: '#e58e51',
                 showSymbol: false,
                 data: getDailyData(data.daily, 'shaicha'),
             },
             {
                 name: '阳性总数',
                 type: 'line',
-                color: '#e58e51',
+                color: '#4f6fc7',
                 showSymbol: false,
                 data: getDailyData(data.daily, 'total'),
             }
@@ -342,20 +360,20 @@ function renderCharts(data) {
             {
                 name: '确诊',
                 type: 'line',
-                color: '#4f6fc7',
+                color: '#e47d7e',
                 showSymbol: false,
                 data: getDailyData(data.daily, 'confirm'),
             },
             {
                 name: '无症状',
                 type: 'line',
-                color: '#e58e51',
+                color: '#fdc368',
                 showSymbol: false,
                 data: getDailyData(data.daily, 'wzz'),
             }
         ],
     });
-    // TODO: 增加数据块[【本轮疫情】新增确诊 +82，新增无症状，累计确诊 ，累计无症状]
+
     var options = [
         confirmChartOption,
         shaichaChartOption,
@@ -412,33 +430,36 @@ function downloadChart() {
         downloadSettings.push($(item).prop('checked') ? 1 : 0);
     });
     html2canvas(document.querySelector("#chartTitle")).then(titleCanvas => {
-        // Calculate total height first
-        let totalHeight = titleCanvas.height;
-        charts.forEach((chart, i) => {
-            if (downloadSettings[i]) {
-                totalHeight = totalHeight + chart.getRenderedCanvas().height;
-            }
-        });
-        const bigCanvas = document.createElement('canvas');
-        bigCanvas.width = titleCanvas.width;
-        bigCanvas.height = totalHeight;
+        html2canvas(document.querySelector("#kanban")).then(kanbanCanvas => {
+            // Calculate total height first
+            let totalHeight = titleCanvas.height + kanbanCanvas.height;
+            charts.forEach((chart, i) => {
+                if (downloadSettings[i]) {
+                    totalHeight = totalHeight + chart.getRenderedCanvas().height;
+                }
+            });
+            const bigCanvas = document.createElement('canvas');
+            bigCanvas.width = titleCanvas.width;
+            bigCanvas.height = totalHeight;
 
-        // Draw canvas one by one
-        const ctx = bigCanvas.getContext('2d');
-        ctx.drawImage(titleCanvas, 0, 0);
-        let currentHeightOffset = titleCanvas.height;
-        charts.forEach((chart, i) => {
-            if (downloadSettings[i]) {
-                const canvas = chart.getRenderedCanvas();
-                ctx.drawImage(canvas, 0, currentHeightOffset);
-                currentHeightOffset = currentHeightOffset + canvas.height;
-            }
-        });
+            // Draw canvas one by one
+            const ctx = bigCanvas.getContext('2d');
+            ctx.drawImage(titleCanvas, 0, 0);
+            ctx.drawImage(kanbanCanvas, 0, titleCanvas.height);
+            let currentHeightOffset = titleCanvas.height + kanbanCanvas.height;
+            charts.forEach((chart, i) => {
+                if (downloadSettings[i]) {
+                    const canvas = chart.getRenderedCanvas();
+                    ctx.drawImage(canvas, 0, currentHeightOffset);
+                    currentHeightOffset = currentHeightOffset + canvas.height;
+                }
+            });
 
-        const link = document.createElement('a');
-        link.download = `chart.${getTimestamp()}.png`;
-        link.href = bigCanvas.toDataURL("image/png");
-        link.click();
+            const link = document.createElement('a');
+            link.download = `chart.${getTimestamp()}.png`;
+            link.href = bigCanvas.toDataURL("image/png");
+            link.click();
+        });
     });
 }
 

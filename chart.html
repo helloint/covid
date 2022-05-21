@@ -7,7 +7,7 @@
         body {font:12px Arial, Helvetica, sans-serif;}
         .chart-wrap {position:relative;width:800px;}
         .chart-title {width:800px;height:80px;color:#eff2f9;line-height:80px;background-color:#100c28;display:flex;}
-        .chart-title .chart-title-center {width:600px;font-size:30px;text-align:center;}
+        .chart-title .chart-title-center {width:600px;font-size:40px;text-align:center;}
         .chart-title .chart-title-left {width:100px;padding-left:20px;}
         .chart-title .chart-title-right {width:100px;font-size:12px;text-align:right;vertical-align:bottom;padding-right:20px;}
         .chart-container {width:800px;height:350px;}
@@ -26,11 +26,36 @@
         #regionGrid .percent {width:78px;}
         #regionGrid .region .total {color:red;font-weight:bold;}
         #regionGrid .confirm {background-color:#e0eaf6;}
+        #regionGrid .zero {color: gray;}
         #regionGrid .wzz {background-color:#f5d5e9;}
         #regionGrid .diff {background-color:#fcf3cf;}
         #regionGrid .diff.plus {color:red;}
         #regionGrid .diff.minus {color:green;}
         .download {cursor:pointer;position:absolute;top:0;right:-35px;}
+
+        .block-wrap {width: 800px; background-color: #100c28; padding-bottom: 10px;}
+        .block-title {text-align: center; font-size: 28px; color: white; font-weight: bold; padding-bottom: 10px;}
+        .block-container {display: flex; flex-wrap: wrap;}
+        .block-container .block {width: 190px; height: 150px; border-radius: 10px; text-align: center; margin: 0 0 8px 8px}
+        .block-container .block:nth-child(4n) {margin-right: 0;}
+        .block-container .block .num {margin: 0; padding-top: 22px; font-size: 45px; font-weight: 700; font-family: PingFang SC,Helvetica Neue,Helvetica,Arial,Hiragino Sans GB,Heiti SC,Microsoft YaHei,WenQuanYi Micro Hei,sans-serif}
+        .block-container .block .label {margin: 0; padding-top: 5px; font-size: 25px; font-weight: 700; font-family: PingFang SC,Helvetica Neue,Helvetica,Arial,Hiragino Sans GB,Heiti SC,Microsoft YaHei,WenQuanYi Micro Hei,sans-serif}
+        .block-container .col1 {background-color: #fefaf7;}
+        .block-container .col1 .num {color: #e47d7e;}
+        .block-container .col2 {background-color: #fef8fe;}
+        .block-container .col2 .num {color: #fdc368;}
+        .block-container .col3 {background-color: #fdf5f4;}
+        .block-container .col3 .num {color: #6bdab4;}
+        .block-container .col4 {background-color: #f4f6f8;}
+        .block-container .col4 .num {color: #4e5a65;}
+        .block-container .col5 {background-color: #fefaf7;}
+        .block-container .col5 .num {color: #e47d7e;}
+        .block-container .col6 {background-color: #fef8fe;}
+        .block-container .col6 .num {color: #fdc368;}
+        .block-container .col7 {background-color: #fdf5f4;}
+        .block-container .col7 .num {color: #6bdab4;}
+        .block-container .col8 {background-color: #f4f6f8;}
+        .block-container .col8 .num {color: #4e5a65;}
     </style>
     <!-- Include the ECharts file you just downloaded -->
     <script src="js/echarts.min.js"></script>
@@ -76,6 +101,43 @@
         <div class="chart-title-left"></div>
         <div class="chart-title-center"><span id="date" class="chart-title-date"></span> 上海</div>
         <div class="chart-title-right">by helloint</div>
+    </div>
+    <div id="kanban" class="block-wrap">
+        <div class="block-title">看板</div>
+        <div class="block-container">
+            <div class="block col1">
+                <p class="num">-</p>
+                <p class="label">本土确诊</p>
+            </div>
+            <div class="block col2">
+                <p class="num">-</p>
+                <p class="label">本土无症状</p>
+            </div>
+            <div class="block col3">
+                <p class="num">-</p>
+                <p class="label">新增治愈</p>
+            </div>
+            <div class="block col4">
+                <p class="num">-</p>
+                <p class="label">死亡病例</p>
+            </div>
+            <div class="block col5">
+                <p class="num">-</p>
+                <p class="label">累计确诊</p>
+            </div>
+            <div class="block col6">
+                <p class="num">-</p>
+                <p class="label">累计无症状</p>
+            </div>
+            <div class="block col7">
+                <p class="num">-</p>
+                <p class="label">累计治愈</p>
+            </div>
+            <div class="block col8">
+                <p class="num">-</p>
+                <p class="label">累计死亡</p>
+            </div>
+        </div>
     </div>
     <div id="chartsContainer"></div>
 </div>
