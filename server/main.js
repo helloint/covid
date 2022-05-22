@@ -60,6 +60,8 @@ async function main() {
             await processHistory();
             break;
         default:
+            url = 'https://mp.weixin.qq.com/s/q385QELBASHyzn1xVYVNlA';
+            await processDailyData(url);
             console.log('No match type.');
     }
 }
@@ -184,7 +186,7 @@ async function processDailyData(url, showRegions = true) {
     const $ = jQuery = require('jquery')(window);
     var regions = ['浦东新区', '黄浦区', '静安区', '徐汇区', '长宁区', '虹口区', '杨浦区', '普陀区', '闵行区', '宝山区', '嘉定区', '金山区', '松江区', '青浦区', '奉贤区', '崇明区'];
 
-    var summary = $('#js_content section[data-id="106156"] span:first').parents('section:first').text().trim();
+    var summary = $('#js_content section[data-id="106156"]').text().trim();
     var dateRegex = /(\d{4})年(\d+)月(\d+)日/;
     var dateResult = summary.match(dateRegex);
     var date = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
