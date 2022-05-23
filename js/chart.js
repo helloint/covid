@@ -1,19 +1,88 @@
+let lastDay = null; // '2022-05-22'
+let currentDate = null; // '2022-05-10'
+let originalData = null;
 function init() {
     fetch(`data/dailyTotal.json`)
         .then(response => response.json())
         .then(data => {
             extendCalcData(data);
-            $('#date').text(formatDate(Object.keys(data.daily)[Object.keys(data.daily).length - 1]));
-            renderKanban(data);
-            renderCharts(processTableData(data));
-            renderRegion(data);
+            lastDay = Object.keys(data.daily)[Object.keys(data.daily).length - 1];
+            currentDate = lastDay;
+            originalData = data;
+            renderUI();
+
+            initTimeMachine();
         });
+}
+
+function initTimeMachine() {
+    const handle = $("#slider .ui-slider-handle");
+    const startDate = new Date('2022-03-06');
+    const lastDate = new Date(lastDay);
+    const diffTime = Math.abs(lastDate - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    $("#slider").slider({
+        orientation: "vertical",
+        value: 0,
+        min: -diffDays,
+        max: 0,
+        create: function () {
+            var thatDate = getDateByOffset(lastDay, $(this).slider("value"));
+            handle.text(formatDate(thatDate).split('年')[1]);
+        },
+        slide: function (event, ui) {
+            var thatDate = getDateByOffset(lastDay, ui.value);
+            handle.text(formatDate(thatDate).split('年')[1]);
+            currentDate = thatDate;
+            renderUI();
+        }
+    });
+}
+
+/**
+ * Input '2022-05-22', -1, return '2022-05-21'
+ * @param date string '2022-05-22'
+ * @param dayOffset integer -1
+ * @returns {string} '2022-05-21'
+ */
+function getDateByOffset(date, dayOffset) {
+    var thatDay = new Date(new Date(date).getTime() + dayOffset * 3600 * 24 * 1000);
+    return parseDate(thatDay);
+}
+
+function renderUI() {
+    $('#date').text(formatDate(currentDate));
+    const data = cutData(originalData, currentDate);
+    renderKanban(data);
+    renderCharts(processTableData(data));
+    renderRegion(data);
+}
+
+/**
+ * Cut the data that after the currentDate
+ * @param data
+ * @param endDate
+ * @returns {{regions: {}, daily: {}}}
+ */
+function cutData(data, endDate) {
+    var daily = {};
+    Object.entries(data.daily).forEach(([date, item]) => {
+        if (date <= endDate) {
+            daily[date] = item;
+        }
+    });
+    var regions = {};
+    Object.entries(data.regions).forEach(([date, item]) => {
+        if (date <= endDate) {
+            regions[date] = item;
+        }
+    });
+    return {daily, regions};
 }
 
 function renderKanban(data) {
     const dailyData = data.daily;
-    const todayDate = Object.keys(dailyData)[Object.keys(dailyData).length - 1];
-    const dailyDay0 = dailyData[todayDate];
+    const dailyDay0 = dailyData[currentDate];
     $('#kanban .col1 .num').text('+' + dailyDay0.confirm);
     $('#kanban .col2 .num').text('+' + dailyDay0.wzz);
     $('#kanban .col3 .num').text('+' + dailyDay0.cured);
@@ -25,11 +94,13 @@ function renderKanban(data) {
 }
 
 function renderRegion(data) {
+    $('#regionGrid').html($('#regionGridTmpl').html());
     const regionData = data.regions;
     const regionSummary = [];
     // 计算1，3，7历史数据均值
     // index = 0,1,0,1,0,0,0,1
     let dayIndex = 0;
+    // TODO: from currentDate, not last date
     for (let i = Object.keys(regionData).length - 1; i > 0; i--) {
         regionData[Object.keys(regionData)[i]].forEach((region, regionIndex) => {
             if (dayIndex === 0) {
@@ -79,10 +150,9 @@ function renderRegion(data) {
     $('#regionGrid tbody').append(tbody);
 
     const dailyData = data.daily;
-    const todayDate = Object.keys(dailyData)[Object.keys(dailyData).length - 1];
-    const todayDateStr = formatDate(todayDate);
-    $('#regionGridDate').text(todayDateStr + ' 上海');
-    const dailyDay0 = dailyData[todayDate];
+    const todayDateStr = formatDate(currentDate);
+    $('#regionGrid .currentDate').text(todayDateStr + ' 上海');
+    const dailyDay0 = dailyData[currentDate];
     let todaySummary = {};
     dayIndex = 0;
     for (let i = Object.keys(dailyData).length - 1; i > 0; i--) {
@@ -135,7 +205,7 @@ function getDailyData(data, key) {
 const charts = [];
 const chartsDownloadDefaultSetting = [[1, 1, 1], [0, 0, 0, 1, 1, 1]];
 
-var commonChartOption = {
+const commonChartOption = {
     title: {
         padding: [5, 20],
         left: 'center',
@@ -315,6 +385,7 @@ function renderCharts(data) {
                 type: 'line',
                 color: '#6bdab4',
                 showSymbol: false,
+                smooth: true,
                 data: getDailyData(data.daily, 'cured'),
             }
         ],
@@ -385,6 +456,7 @@ function renderCharts(data) {
     ];
 
     const $container = $('#chartsContainer');
+    $container.empty();
     options.forEach((option, i) => {
         $container.append(`<div id="chart${i}" class="chart-container"></div>`);
         const chart = echarts.init(document.getElementById('chart' + i), 'dark');
@@ -470,13 +542,6 @@ function downloadChart(index) {
     });
 }
 
-function getTimestamp() {
-    var now = new Date();
-    var fixTen = (num) => num < 10 ? '0' + num : num;
-    return [now.getFullYear(), fixTen(now.getMonth()), fixTen(now.getDate()),
-        fixTen(now.getHours()), fixTen(now.getMinutes()), fixTen(now.getSeconds())].join('');
-}
-
 /**
  * return ['plus', '12.90%'], ['minus', '-11.65%']
  * @param a 分子
@@ -487,13 +552,4 @@ function calcPercent(a, b) {
     b = parseFloat(b);
     var result = b !== 0 ? (a / b - 1) : a;
     return [result <= 0 ? 'minus' : 'plus', parseInt(result * 10000, 10) / 100 + '%'];
-}
-
-/**
- *
- * @param date 2022-05-10
- * @returns {string} 2022年5月10日
- */
-function formatDate(date) {
-    return parseInt(date.split('-')[0], 10) + '年' + parseInt(date.split('-')[1], 10) + '月' + parseInt(date.split('-')[2], 10) + '日';
 }
