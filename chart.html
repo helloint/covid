@@ -3,13 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <title>图表</title>
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
     <style>
         body {font:12px Arial, Helvetica, sans-serif;}
         #slider-container {position: fixed;left: 905px;top: 57px;}
         #slider-container .title {margin-left: -18px;margin-bottom: 14px;font-size: 16px;}
         #slider-container .slider {height: 400px;}
         #slider-container .ui-slider-handle {width: 55px;height: 1.6em;left: -23px;margin-top: -.8em;text-align: center;line-height: 1.6em;}
+        #slider-container .control {margin-left: -7px;margin-right: 11px;cursor: pointer;}
         .chart-wrap {position:relative;width:800px;}
         .chart-title {width:800px;height:80px;color:#eff2f9;line-height:80px;background-color:#100c28;display:flex;}
         .chart-title .chart-title-center {width:500px;font-size:40px;text-align:center;}
@@ -70,7 +71,7 @@
     <!-- Include the ECharts file you just downloaded -->
     <script src="js/echarts.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script src="js/html2canvas.min.js"></script>
     <script src="js/common.js"></script>
     <script src="js/util.js"></script>
@@ -91,6 +92,7 @@
     <div id="slider" class="slider">
         <div class="ui-slider-handle"></div>
     </div>
+    <img id="playBtn" class="control" src="images/play.svg" />
 </div>
 <a href="./"><img src="images/back.svg" width="32" height="32"></a>
 <div id="regionsContainer" class="region-wrap">

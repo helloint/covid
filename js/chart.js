@@ -1,6 +1,7 @@
 let lastDay = null; // '2022-05-22'
 let currentDate = null; // '2022-05-10'
 let originalData = null;
+let timeMachineIntervalId = null;
 function init() {
     fetch(`data/dailyTotal.json`)
         .then(response => response.json())
@@ -30,11 +31,29 @@ function initTimeMachine() {
             var thatDate = getDateByOffset(lastDay, $(this).slider("value"));
             handle.text(formatDate(thatDate).split('年')[1]);
         },
-        slide: function (event, ui) {
+        change: function (event, ui) {
             var thatDate = getDateByOffset(lastDay, ui.value);
             handle.text(formatDate(thatDate).split('年')[1]);
             currentDate = thatDate;
             renderUI();
+        }
+    });
+
+    $('#playBtn').click(() => {
+        if ($('#playBtn').attr('src') === 'images/play.svg') {
+            $('#playBtn').attr('src', 'images/stop.svg');
+            let val = $("#slider").slider('value');
+            if (val === 0) val = -diffDays;
+            timeMachineIntervalId = setInterval(() => {
+                $("#slider").slider('value', val++);
+                if (val === 0) {
+                    clearInterval(timeMachineIntervalId);
+                    $('#playBtn').attr('src', 'images/play.svg');
+                }
+            }, 200);
+        } else {
+            clearInterval(timeMachineIntervalId);
+            $('#playBtn').attr('src', 'images/play.svg');
         }
     });
 }
