@@ -55,9 +55,9 @@ function initUI() {
         date.setDate(date.getDate()-1);
     }
 
-    $('#districtSelector').append(`<option>上海市</option>`);
+    $('#districtSelector').append(`<option selected>上海市</option>`);
     districts.forEach(name => {
-        $('#districtSelector').append(`<option ${name === '闵行区' ? 'selected': ''}>${name}</option>`);
+        $('#districtSelector').append(`<option>${name}</option>`);
     });
 
     $(window).on('hashchange', function(e) {
