@@ -66,7 +66,7 @@ async function main() {
 
 async function processHistory() {
     for (const link of config.links) {
-        await processDailyData(link[1], false);
+        await processDailyData(link[1], false, true);
     }
 }
 
@@ -177,7 +177,7 @@ async function getLatestTopicsFromSHFB(logInfo) {
     return null;
 }
 
-async function processDailyData(url, showRegions = true) {
+async function processDailyData(url, showRegions = true, reset = false) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
     const regionData = {};
@@ -187,7 +187,8 @@ async function processDailyData(url, showRegions = true) {
     var summary = $('#js_content section[data-id="106156"]').text().trim();
     var dateRegex = /(\d{4})年(\d+)月(\d+)日/;
     var dateResult = summary.match(dateRegex);
-    var date = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
+    var dataDate = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
+    var dataDateDisplay = parseDate(dataDate);
     var data = {};
     /*
     Template:
@@ -251,11 +252,13 @@ async function processDailyData(url, showRegions = true) {
             Template:
             病例676，居住于黄浦区，
             病例678—病例681，居住于虹口区，
+            病例1，男，23岁，居住于闵行区，
+            病例1，女，57岁，居住于宝山区丹霞山路257弄，
              */
-            regex = /病例(\d+)([—、]病例(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
+            regex = /^病例(\d+)([—、]病例(\d+))?，(?:[男女]，)?(?:[\d]+岁，)?居住于([\u4e00-\u9fa5]+区)/;
         } else if (subjectTitle === '本土无症状感染者情况') {
             startIndex = 3;
-            regex = /无症状感染者(\d+)([—、]无症状感染者(\d+))?，居住于([\u4e00-\u9fa5]+)，/;
+            regex = /^无症状感染者(\d+)([—、]无症状感染者(\d+))?，(?:[男女]，)?(?:[\d]+岁，)?居住于([\u4e00-\u9fa5]+区)/;
         }
 
         var indexOffset = 0;
@@ -277,7 +280,7 @@ async function processDailyData(url, showRegions = true) {
                     var end = result[3] ? parseInt(result[3], 10) : start;
                     count = end - start + 1;
 
-                    tempData[result[4]] = count;
+                    tempData[result[4]] = (tempData[result[4]] ? tempData[result[4]] : 0) + count;
                 }
 
                 /*
@@ -341,10 +344,15 @@ async function processDailyData(url, showRegions = true) {
         }
     });
     var totalResultData = [0, totalResult[1], totalResult[2], totalResult.length >=4 && totalResult[3] ? totalResult[3] : 0, totalResult.length >=5 && totalResult[4] ? totalResult[4] : 0];
+    // 累计治愈数据修正。4/14之前的数据，包含了历史疫情。
+    if (dataDateDisplay < '2022-04-14') {
+        totalResultData[1] = totalResultData[1] - 385;
+    }
+
     var deathResultData = [0, deathResult ? deathResult[1] : 0];
     if (curedResult == null) {
         // 没新增也没关系，靠累计计算。
-        curedResult = [0, '-'];
+        curedResult = [0, 0];
     }
 
     var summaryData = [
@@ -371,6 +379,7 @@ async function processDailyData(url, showRegions = true) {
         "total_cured": parseInt(totalResultData[1], 10),
         "curr_heavy": parseInt(totalResultData[3], 10),
         "curr_cri": parseInt(totalResultData[4], 10),
+        "url": url,
     };
 
     const ret = [];
@@ -405,9 +414,9 @@ async function processDailyData(url, showRegions = true) {
     const dailyFeed = `${dataFilePath}/daily.json`;
     const dailyTotalFeed = `${dataFilePath}/dailyTotal.json`;
     const dailyTotalData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
-    data.date = parseDate(date);
-    if (dailyTotalData.daily[data.date]) delete dailyTotalData.daily[data.date];
-    if (dailyTotalData.regions[data.date]) delete dailyTotalData.regions[data.date];
+    data.date = parseDate(dataDate);
+    if (reset && dailyTotalData.daily[data.date]) delete dailyTotalData.daily[data.date];
+    if (reset && dailyTotalData.regions[data.date]) delete dailyTotalData.regions[data.date];
     dailyTotalData.daily[data.date] = data.daily;
     dailyTotalData.regions[data.date] = data.regions;
     var totalNums = {

@@ -261,6 +261,7 @@ function renderCharts(data) {
                 },
                 color: '#e47d7e',
                 smooth: true,
+                animation: false,
                 data: getDailyData(data.recentDaily, 'confirm'),
             },
             {
@@ -271,6 +272,7 @@ function renderCharts(data) {
                 },
                 color: '#fdc368',
                 smooth: true,
+                animation: false,
                 data: getDailyData(data.recentDaily, 'wzz'),
             }
         ],
@@ -293,6 +295,7 @@ function renderCharts(data) {
                 },
                 color: '#e47d7e',
                 smooth: true,
+                animation: false,
                 data: getDailyData(data.recentDaily, 'confirm_shaicha'),
             },
             {
@@ -303,6 +306,7 @@ function renderCharts(data) {
                 },
                 color: '#fdc368',
                 smooth: true,
+                animation: false,
                 data: getDailyData(data.recentDaily, 'wzz_shaicha'),
             }
         ],
@@ -326,6 +330,7 @@ function renderCharts(data) {
                     position: 'top',
                 },
                 color: '#e47d7e',
+                animation: false,
                 data: getDailyData(data.recentDaily, 'curr_confirm'),
             },
             {
@@ -336,6 +341,7 @@ function renderCharts(data) {
                     position: 'top',
                 },
                 color: '#6bdab4',
+                animation: false,
                 data: getDailyData(data.recentDaily, 'cured'),
             }
         ],
@@ -357,6 +363,7 @@ function renderCharts(data) {
                     // offset: [5, -6]
                 },
                 color: '#4e5a65',
+                animation: false,
                 data: getDailyData(data.recentDaily, 'death'),
             },
         ],
@@ -378,6 +385,7 @@ function renderCharts(data) {
                 color: '#e47d7e',
                 showSymbol: false,
                 smooth: true,
+                animation: false,
                 data: getDailyData(data.daily, 'confirm'),
             },
             {
@@ -386,6 +394,7 @@ function renderCharts(data) {
                 color: '#6bdab4',
                 showSymbol: false,
                 smooth: true,
+                animation: false,
                 data: getDailyData(data.daily, 'cured'),
             }
         ],
@@ -405,6 +414,7 @@ function renderCharts(data) {
                 name: '风险排查',
                 type: 'line',
                 color: '#e58e51',
+                animation: false,
                 showSymbol: false,
                 data: getDailyData(data.daily, 'shaicha'),
             },
@@ -412,6 +422,7 @@ function renderCharts(data) {
                 name: '阳性总数',
                 type: 'line',
                 color: '#4f6fc7',
+                animation: false,
                 showSymbol: false,
                 data: getDailyData(data.daily, 'total'),
             }
@@ -432,6 +443,7 @@ function renderCharts(data) {
                 name: '确诊',
                 type: 'line',
                 color: '#e47d7e',
+                animation: false,
                 showSymbol: false,
                 data: getDailyData(data.daily, 'confirm'),
             },
@@ -439,6 +451,7 @@ function renderCharts(data) {
                 name: '无症状',
                 type: 'line',
                 color: '#fdc368',
+                animation: false,
                 showSymbol: false,
                 data: getDailyData(data.daily, 'wzz'),
             }

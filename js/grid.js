@@ -76,7 +76,7 @@ function renderTable(data) {
     html += `</tr></thead><tbody>`;
     Object.entries(data.daily).forEach(([date, dailyData]) => {
         var row = `<tr>`;
-        row += `<td>${date}</td>`;
+        row += `<td>${dailyData.url ? `<a href="${dailyData.url}">` : ''}${date}${dailyData.url ? '</a>' : ''}</td>`;
         dataColumns.forEach((key) => {
             row += `<td>${dailyData[key] !== undefined ? dailyData[key] : 'n/a'}</td>`;
         });
