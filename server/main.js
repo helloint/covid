@@ -60,8 +60,6 @@ async function main() {
             await processHistory();
             break;
         default:
-            url = 'https://mp.weixin.qq.com/s/q385QELBASHyzn1xVYVNlA';
-            await processDailyData(url);
             console.log('No match type.');
     }
 }
@@ -332,8 +330,9 @@ async function processDailyData(url, showRegions = true) {
     累计本土确诊15284例，治愈出院2600例，在院治疗12684例（其中重症10例）。
     累计本土确诊24529例，治愈出院4675例，在院治疗19851例（其中重症16例），死亡3例。
     累计本土确诊6806例，治愈出院1116例，在院治疗5683例，死亡7例（2020年疫情初期发生）。
+    累计本土确诊57717例，治愈出院54396例，在院治疗2736例（其中重型135例，危重型38例），现有待排查的疑似病例0例。
      */
-    var totalRegex = /治愈出院(\d+)例，在院治疗(\d+)例(?:（其中重(?:型|症)(\d+)例(?:，危重型(\d+)例)?）)?(?:，死亡\d+例)?(?:（2020年疫情初期发生）)?。/;
+    var totalRegex = /治愈出院(\d+)例，在院治疗(\d+)例(?:（其中重(?:型|症)(\d+)例(?:，危重型(\d+)例)?）)?(?:，死亡\d+例)?(?:（2020年疫情初期发生）)?[，。]/;
     var totalResult = null;
     $('#js_content section[data-id="92620"]').each((i, item) => {
         var content = $(item).text().trim();
