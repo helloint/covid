@@ -31,6 +31,10 @@ function initTimeMachine() {
             var thatDate = getDateByOffset(lastDay, $(this).slider("value"));
             handle.text(formatDate(thatDate).split('年')[1]);
         },
+        slide: function (event, ui) {
+            var thatDate = getDateByOffset(lastDay, ui.value);
+            handle.text(formatDate(thatDate).split('年')[1]);
+        },
         change: function (event, ui) {
             var thatDate = getDateByOffset(lastDay, ui.value);
             handle.text(formatDate(thatDate).split('年')[1]);
@@ -45,7 +49,7 @@ function initTimeMachine() {
             let val = $("#slider").slider('value');
             if (val === 0) val = -diffDays;
             timeMachineIntervalId = setInterval(() => {
-                $("#slider").slider('value', val++);
+                $("#slider").slider('value', ++val);
                 if (val === 0) {
                     clearInterval(timeMachineIntervalId);
                     $('#playBtn').attr('src', 'images/play.svg');
