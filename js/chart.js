@@ -539,42 +539,47 @@ function downloadChart(index) {
     $('input[name=downloadChoice' + index + ']').each((i, item) => {
         downloadSettings.push($(item).prop('checked') ? 1 : 0);
     });
-    html2canvas(document.querySelector("#chartTitle")).then(titleCanvas => {
-        html2canvas(document.querySelector("#kanban")).then(kanbanCanvas => {
-            // Calculate total height first
-            let totalHeight = titleCanvas.height;
-            if (downloadSettings[0]) totalHeight += kanbanCanvas.height;
-            charts.forEach((chart, i) => {
-                if (downloadSettings[i + 1]) {
-                    totalHeight = totalHeight + chart.getRenderedCanvas().height;
-                }
-            });
-            const bigCanvas = document.createElement('canvas');
-            bigCanvas.width = titleCanvas.width;
-            bigCanvas.height = totalHeight;
-
-            // Draw canvas one by one
-            const ctx = bigCanvas.getContext('2d');
-            ctx.drawImage(titleCanvas, 0, 0);
-            let currentHeightOffset = titleCanvas.height;
-            if (downloadSettings[0]) {
-                ctx.drawImage(kanbanCanvas, 0, titleCanvas.height);
-                currentHeightOffset += kanbanCanvas.height;
+    Promise.all([
+        html2canvas(document.querySelector("#chartTitle")),
+        html2canvas(document.querySelector("#kanban")),
+        html2canvas(document.querySelector("#footer")),
+    ]).then(([titleCanvas, kanbanCanvas, footerCanvas]) => {
+        // Calculate total height first
+        let totalHeight = titleCanvas.height;
+        if (downloadSettings[0]) totalHeight += kanbanCanvas.height;
+        charts.forEach((chart, i) => {
+            if (downloadSettings[i + 1]) {
+                totalHeight += chart.getRenderedCanvas().height;
             }
-
-            charts.forEach((chart, i) => {
-                if (downloadSettings[i + 1]) {
-                    const canvas = chart.getRenderedCanvas();
-                    ctx.drawImage(canvas, 0, currentHeightOffset);
-                    currentHeightOffset = currentHeightOffset + canvas.height;
-                }
-            });
-
-            const link = document.createElement('a');
-            link.download = `chart.${getTimestamp()}.png`;
-            link.href = bigCanvas.toDataURL("image/png");
-            link.click();
         });
+        totalHeight += footerCanvas.height;
+        const bigCanvas = document.createElement('canvas');
+        bigCanvas.width = titleCanvas.width;
+        bigCanvas.height = totalHeight;
+
+        // Draw canvas one by one
+        const ctx = bigCanvas.getContext('2d');
+        ctx.drawImage(titleCanvas, 0, 0);
+        let currentHeightOffset = titleCanvas.height;
+        if (downloadSettings[0]) {
+            ctx.drawImage(kanbanCanvas, 0, titleCanvas.height);
+            currentHeightOffset += kanbanCanvas.height;
+        }
+
+        charts.forEach((chart, i) => {
+            if (downloadSettings[i + 1]) {
+                const canvas = chart.getRenderedCanvas();
+                ctx.drawImage(canvas, 0, currentHeightOffset);
+                currentHeightOffset = currentHeightOffset + canvas.height;
+            }
+        });
+
+        ctx.drawImage(footerCanvas, 0, currentHeightOffset);
+
+        const link = document.createElement('a');
+        link.download = `chart.${getTimestamp()}.png`;
+        link.href = bigCanvas.toDataURL("image/png");
+        link.click();
     });
 }
 
