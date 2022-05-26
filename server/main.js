@@ -60,6 +60,7 @@ async function main() {
             await processHistory();
             break;
         default:
+            await run();
             console.log('No match type.');
     }
 }
@@ -168,7 +169,13 @@ async function getLatestTopicsFromSHFB(logInfo) {
             });
             return ret;
         } else {
-            console.log(`No 'app_msg_list' found.`);
+            if (response.data && response.data.base_resp && response.data.base_resp.err_msg) {
+                // Token expired
+                console.log(response.data.base_resp.err_msg);
+                throw new Error(response.data.base_resp.err_msg);
+            } else {
+                console.log(`No 'app_msg_list' found.`);
+            }
             return null;
         }
     }
