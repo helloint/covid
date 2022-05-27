@@ -8,6 +8,9 @@ on:
     - cron: '*/5 23 * * *'
     - cron: '*/5 0-6 * * *'
   workflow_dispatch:
+  repository_dispatch:
+    types:
+      - webhook
 
 jobs:
   build:
