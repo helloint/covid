@@ -2,10 +2,10 @@
 ## product
 - Map: <https://helloint.xyz/covid/map.html>
 - Chart: <https://helloint.xyz/covid/chart.html>
-- Grid: <https://helloint.xyz/covid/grid.html>
+- Data: <https://helloint.xyz/covid/grid.html>
 
 ## introduction
-知乎：[上海疫情地图数据报表的处理和自动化](https://zhuanlan.zhihu.com/p/515840359)
+[上海疫情地图数据报表的处理和自动化](https://zhuanlan.zhihu.com/p/515840359)(知乎)
 
 ## data process
 `node main.js [type] [url]`  
@@ -28,8 +28,8 @@ This will detect if there is new daily and address report from 《上海发布�
 * `daily`  
 抓取《上海发布》每天早上发布的前一天的新冠感染者统计数据。此数据服务于我的《疫情早早报》的Excel统计表格。
 * `address`  
-抓取《上海发布》当天的新冠感染者地址信息。
+抓取《上海发布》当天的新冠感染者地址信息。疫情后期，这个数据已经没有实际用途了，因为新发现的大都是隔离管控人员，对所在小区影响几乎没有。
 * `addressmh`  
-抓取《今日闵行》当天的新冠感染者地址信息。这个数据虽然不全，但要比上海发布的早1小时。
+抓取《今日闵行》当天的新冠感染者地址信息。这个数据虽然不全，但要比上海发布的早1小时。理论上可以把每个区都爬出来，然后合并，就不用等上海发布的地址信息了。
 * `3`  
-抓取三区划分数据。如果表格是以图片形式发布的，就抓不到数据了。
+抓取闵行区古美街道《三区划分》数据。如果表格是以图片形式发布的，就抓不到数据了。
