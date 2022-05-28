@@ -46,7 +46,9 @@ jobs:
               set -e
               git commit -am "Automated data process"
               git push
+              exit 0
           else
               set -e
               echo "No changes since last run"
+              exit 1
           fi
