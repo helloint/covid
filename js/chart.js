@@ -34,12 +34,18 @@ function initTimeMachine() {
         slide: function (event, ui) {
             var thatDate = getDateByOffset(lastDay, ui.value);
             handle.text(formatDate(thatDate).split('年')[1]);
+            if (currentDate !== thatDate) {
+                currentDate = thatDate;
+                renderUI();
+            }
         },
         change: function (event, ui) {
             var thatDate = getDateByOffset(lastDay, ui.value);
             handle.text(formatDate(thatDate).split('年')[1]);
-            currentDate = thatDate;
-            renderUI();
+            if (currentDate !== thatDate) {
+                currentDate = thatDate;
+                renderUI();
+            }
         }
     });
 
@@ -123,7 +129,6 @@ function renderRegion(data) {
     // 计算1，3，7历史数据均值
     // index = 0,1,0,1,0,0,0,1
     let dayIndex = 0;
-    // TODO: from currentDate, not last date
     for (let i = Object.keys(regionData).length - 1; i > 0; i--) {
         regionData[Object.keys(regionData)[i]].forEach((region, regionIndex) => {
             if (dayIndex === 0) {
@@ -166,8 +171,6 @@ function renderRegion(data) {
                     <td class="wzz num-wzz-bihuan ${!region.wzz_bihuan ? 'zero' : ''}">${region.wzz_bihuan}</td>
                     <td class="wzz num-wzz-shaicha ${!region.wzz_shaicha ? 'zero' : ''}">${region.wzz_shaicha}</td>
                     <td class="diff num-diff-1 ${calcPercent(region.today, region.yesterday)[0]}">${calcPercent(region.today, region.yesterday)[1]}</td>
-                    <td class="diff num-diff-3 ${calcPercent(region.today, region.avg3)[0]}">${calcPercent(region.today, region.avg3)[1]}</td>
-                    <td class="diff num-diff-7 ${calcPercent(region.today, region.avg7)[0]}">${calcPercent(region.today, region.avg7)[1]}</td>
                 </tr>`;
     });
     $('#regionGrid tbody').append(tbody);
@@ -207,8 +210,6 @@ function renderRegion(data) {
                 <th class="num-wzz-bihuan">${dailyDay0.wzz_bihuan}</th>
                 <th class="num-wzz-shaicha">${dailyDay0.wzz_shaicha}</th>
                 <th rowspan="2" class="num-diff-1">${calcPercent(dailyDay0.total, todaySummary.yesterday)[1]}</th>
-                <th rowspan="2" class="num-diff-3">${calcPercent(dailyDay0.total, todaySummary.avg3)[1]}</th>
-                <th rowspan="2" class="num-diff-7">${calcPercent(dailyDay0.total, todaySummary.avg7)[1]}</th>
             </tr>
             <tr class="region-total-2">
                 <th colspan="3" class="num-confirm">${dailyDay0.confirm}</th>
