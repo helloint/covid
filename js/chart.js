@@ -10,8 +10,9 @@ function init() {
             lastDay = Object.keys(data.daily)[Object.keys(data.daily).length - 1];
             currentDate = lastDay;
             originalData = data;
-            renderUI();
 
+            renderUI();
+            renderCalendar();
             initTimeMachine();
         });
 }
@@ -582,6 +583,81 @@ function downloadChart(index) {
         link.href = bigCanvas.toDataURL("image/png");
         link.click();
     });
+}
+
+
+function renderCalendar() {
+    var calendarData = [];
+    Object.entries(originalData.daily).forEach(([date, item]) => {
+        calendarData.push([date, item.total]);
+    });
+    const option = {
+        title: {
+            top: 10,
+            left: 'center',
+            text: '2022上海新冠疫情'
+        },
+        visualMap: {
+            min: 0,
+            max: 30000,
+            type: 'piecewise',
+            orient: 'horizontal',
+            left: 5,
+            right: 0,
+            top: 45,
+        },
+        calendar: {
+            top: 110,
+            left: 30,
+            right: 10,
+            bottom: 10,
+            cellSize: [40, 'auto'],
+            splitLine: {
+                lineStyle: {
+                    color: '#fff'
+                }
+            },
+            orient: 'vertical',
+            range: ['2022-02-26', calendarData[calendarData.length - 1][0]],
+            itemStyle: {
+                borderWidth: 0.5,
+            },
+            dayLabel: {
+                firstDay: 1,
+                margin: 15,
+                nameMap: 'ZH',
+            },
+            monthLabel: {
+                nameMap: 'ZH',
+            },
+            yearLabel: { show: false }
+        },
+        series: {
+            type: 'effectScatter',
+            coordinateSystem: 'calendar',
+            symbolSize: function (val) {
+                return Math.log2(val[1]);
+            },
+            label: {
+                show: true,
+                formatter: function (params) {
+                    var d = echarts.number.parseDate(params.value[0]);
+                    return d.getDate() + '日' + '\n\n' + params.value[1] + '例';
+                },
+                color: '#fff'
+            },
+            data: calendarData,
+        },
+        toolbox: {
+            feature: {
+                saveAsImage: {
+                    type: 'png',
+                },
+            },
+        },
+    };
+    const chart = echarts.init(document.getElementById('calendar'), 'dark');
+    chart.setOption(option);
 }
 
 /**
