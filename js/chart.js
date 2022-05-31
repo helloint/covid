@@ -123,6 +123,58 @@ function renderKanban(data) {
     $('#kanban .col8 .num').text(dailyDay0.total_death);
 }
 
+const regionTrendChartOption = {
+    grid: {
+        top: '10%',
+        left: 0,
+        right: 0,
+        bottom: '10%',
+    },
+    xAxis: {
+        type: 'category',
+        show: false,
+    },
+    yAxis: {
+        type: 'value',
+        show: false,
+        splitLine: {
+            show: false
+        }
+    },
+
+    visualMap: {
+        top: 50,
+        right: 10,
+        pieces: [
+            {
+                max: 1,
+                color: '#6bdab4'
+            },
+            {
+                min: 1,
+                max: 100000,
+                color: 'red'
+            },
+        ],
+        outOfRange: {
+            color: '#999'
+        }
+    },
+    series: [
+        {
+            type: 'line',
+            lineStyle: {
+                width: 1,
+            },
+            color: 'red',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 3,
+            animation: false,
+        }
+    ],
+};
+
 function renderRegion(data) {
     $('#regionGrid').html($('#regionGridTmpl').html());
     const regionData = data.regions;
@@ -130,6 +182,7 @@ function renderRegion(data) {
     // 计算1，3，7历史数据均值
     // index = 0,1,0,1,0,0,0,1
     let dayIndex = 0;
+    let recentMax = 0;
     for (let i = Object.keys(regionData).length - 1; i > 0; i--) {
         regionData[Object.keys(regionData)[i]].forEach((region, regionIndex) => {
             if (dayIndex === 0) {
@@ -145,7 +198,8 @@ function renderRegion(data) {
                     total: 0,
                     yesterday: 0,
                     avg3: 0,
-                    avg7: 0
+                    avg7: 0,
+                    recent: [region.total]
                 });
             } else {
                 regionSummary[regionIndex].total = regionSummary[regionIndex].total + region.total;
@@ -156,6 +210,11 @@ function renderRegion(data) {
                 } else if (dayIndex === 7) {
                     regionSummary[regionIndex].avg7 = regionSummary[regionIndex].total / 7;
                 }
+
+                if (dayIndex < 7) {
+                    regionSummary[regionIndex].recent.push(region.total);
+                    recentMax = Math.max(recentMax, region.total);
+                }
             }
         });
         dayIndex++;
@@ -165,16 +224,30 @@ function renderRegion(data) {
     regionSummary.forEach((region) => {
         tbody += `<tr class="region region-${region.name}">
                     <th>${region.name}</th>
-                    <td class="total">${region.today}</td>
+                    <td class="total ${!region.today ? 'zero' : ''}">${region.today}</td>
                     <td class="confirm num-confirm-bihuan ${!region.confirm_bihuan ? 'zero' : ''}">${region.confirm_bihuan}</td>
                     <td class="confirm num-zhuangui ${!region.zhuangui ? 'zero' : ''}">${region.zhuangui}</td>
                     <td class="confirm num-confirm-shaicha ${!region.confirm_shaicha ? 'zero' : ''}">${region.confirm_shaicha}</td>
                     <td class="wzz num-wzz-bihuan ${!region.wzz_bihuan ? 'zero' : ''}">${region.wzz_bihuan}</td>
                     <td class="wzz num-wzz-shaicha ${!region.wzz_shaicha ? 'zero' : ''}">${region.wzz_shaicha}</td>
-                    <td class="diff num-diff-1 ${calcPercent(region.today, region.yesterday)[0]}">${calcPercent(region.today, region.yesterday)[1]}</td>
+                    <td class="diff num-diff-1 ${calcPercent(region.today, region.yesterday)[0]}">-</td>
                 </tr>`;
     });
     $('#regionGrid tbody').append(tbody);
+
+    regionSummary.forEach((region) => {
+        const chart = echarts.init($(`.region-${region.name} .num-diff-1`)[0]);
+        chart.setOption($.extend(true, {}, regionTrendChartOption, {
+            // yAxis: {
+            //     max: recentMax,
+            // },
+            series: [
+                {
+                    data: region.recent.reverse(),
+                }
+            ],
+        }));
+    });
 
     const dailyData = data.daily;
     const todayDateStr = formatDate(currentDate);
