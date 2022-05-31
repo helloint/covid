@@ -250,46 +250,59 @@ function renderRegion(data) {
     });
 
     const dailyData = data.daily;
-    const todayDateStr = formatDate(currentDate);
-    $('#regionGrid .currentDate').text(todayDateStr + ' 上海');
-    const dailyDay0 = dailyData[currentDate];
-    let todaySummary = {};
+    const currentDateStr = formatDate(currentDate);
+    $('#regionGrid .currentDate').text(currentDateStr + ' 上海');
+    const currentDailyData = dailyData[currentDate];
+    let currentDailySummary = {};  // 用于计算最近几天的比较数据
     dayIndex = 0;
     for (let i = Object.keys(dailyData).length - 1; i > 0; i--) {
         const daily = dailyData[Object.keys(dailyData)[i]];
         if (dayIndex === 0) {
             // {当天today, 累计total, 昨天yesterday, 3天均值avg3, 7天均值avg7}
-            todaySummary = {
+            currentDailySummary = {
                 today: daily.total, total: 0,
-                yesterday: 0, avg3: 0, avg7: 0
+                yesterday: 0, avg3: 0, avg7: 0,
+                recent: [daily.total]
             };
         } else {
-            todaySummary.total = todaySummary.total + daily.total;
+            currentDailySummary.total = currentDailySummary.total + daily.total;
             if (dayIndex === 1) {
-                todaySummary.yesterday = daily.total;
+                currentDailySummary.yesterday = daily.total;
             } else if (dayIndex === 3) {
-                todaySummary.avg3 = todaySummary.total / 3;
+                currentDailySummary.avg3 = currentDailySummary.total / 3;
             } else if (dayIndex === 7) {
-                todaySummary.avg7 = todaySummary.total / 7;
+                currentDailySummary.avg7 = currentDailySummary.total / 7;
+            }
+
+            if (dayIndex < 7) {
+                currentDailySummary.recent.push(daily.total);
             }
         }
         dayIndex++;
     }
     const tfoot = `<tr class="region-total">
                 <th rowspan="2">合计</th>
-                <th rowspan="2" class="num-total">${dailyDay0.total}</th>
-                <th class="num-confirm-bihuan">${dailyDay0.confirm_bihuan}</th>
-                <th class="num-zhuangui">${dailyDay0.zhuangui}</th>
-                <th class="num-confirm-shaicha">${dailyDay0.confirm_shaicha}</th>
-                <th class="num-wzz-bihuan">${dailyDay0.wzz_bihuan}</th>
-                <th class="num-wzz-shaicha">${dailyDay0.wzz_shaicha}</th>
-                <th rowspan="2" class="num-diff-1">${calcPercent(dailyDay0.total, todaySummary.yesterday)[1]}</th>
+                <th rowspan="2" class="num-total">${currentDailyData.total}</th>
+                <th class="num-confirm-bihuan">${currentDailyData.confirm_bihuan}</th>
+                <th class="num-zhuangui">${currentDailyData.zhuangui}</th>
+                <th class="num-confirm-shaicha">${currentDailyData.confirm_shaicha}</th>
+                <th class="num-wzz-bihuan">${currentDailyData.wzz_bihuan}</th>
+                <th class="num-wzz-shaicha">${currentDailyData.wzz_shaicha}</th>
+                <th rowspan="2" class="num-diff-1">-</th>
             </tr>
             <tr class="region-total-2">
-                <th colspan="3" class="num-confirm">${dailyDay0.confirm}</th>
-                <th colspan="2" class="num-wzz">${dailyDay0.wzz}</th>
+                <th colspan="3" class="num-confirm">${currentDailyData.confirm}</th>
+                <th colspan="2" class="num-wzz">${currentDailyData.wzz}</th>
             </tr>`;
     $('#regionGrid tfoot').append(tfoot);
+    const chart = echarts.init($('.region-total .num-diff-1')[0]);
+    chart.setOption($.extend(true, {}, regionTrendChartOption, {
+        series: [
+            {
+                data: currentDailySummary.recent.reverse(),
+            }
+        ],
+    }));
 }
 
 function getDailyData(data, key) {
