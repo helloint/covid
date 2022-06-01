@@ -369,6 +369,7 @@ function renderCharts(data) {
                 type: 'line',
                 label: {
                     show: true,
+                    position: 'inside',
                 },
                 color: '#e47d7e',
                 smooth: true,
