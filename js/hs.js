@@ -20,7 +20,7 @@ function init() {
     fetch(`data/hs.json`)
         .then(response => response.json())
         .then(data => {
-            renderUI(processData(data.data.data));
+            renderUI(processData(data));
         });
 }
 
@@ -28,7 +28,7 @@ function processData(data) {
     var ret = [];
     data.forEach(item => {
         ret.push({
-            name: item.collectionPoint,
+            name: item.collectionPoint.split('【')[0].split('采集点')[0],
             distance: parseInt(item.distance, 10) + '米',
             address: item.collectionAddress,
             serviceHours: processServiceHours(item.serviceHours),
@@ -62,6 +62,8 @@ function processServiceHours(str) {
             dayClass = 'odd-day';
         } else if (dayStr === '二,四,六') {
             dayClass = 'even-day';
+        } else if (dayStr === '一,二,三,四,五') {
+            dayClass = 'work-day';
         }
 
         if (idx === 0) {
@@ -132,9 +134,10 @@ function renderTable(data) {
     $('#container').html(html);
     $('#covidData').DataTable({
         fixedHeader: true,
-        fixedColumns: true,
-        paging: false,
-        searching: false,
+        // fixedColumns: true,
+        // paging: false,
+        pageLength: 50,
+        // searching: false,
         ordering:  false,
     });
 }
