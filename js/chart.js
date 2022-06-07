@@ -581,6 +581,12 @@ function renderCharts(data) {
     ];
 
     const $container = $('#chartsContainer');
+    charts.forEach(chart => {
+        if (chart) {
+            chart.dispose();
+            chart = null;
+        }
+    });
     $container.empty();
     options.forEach((option, i) => {
         $container.append(`<div id="chart${i}" class="chart-container"></div>`);
