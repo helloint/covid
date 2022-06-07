@@ -35,15 +35,15 @@ async function main() {
             await run();
             break;
         case 'daily':
-            // url = 'https://mp.weixin.qq.com/s?__biz=MjM5NTA5NzYyMA==&mid=2654535437&idx=1&sn=6ca56371851bc62a30d97489fab910a8&chksm=bd31e2768a466b60a855883b3e1214115c2901772ca3110c9354345623b0c5033397322d4baf&mpshare=1&scene=23&srcid=0511pP3BjP8oceLhYPt3N5hA&sharer_sharetime=1652226557950&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            // url = 'https://mp.weixin.qq.com/s/tC4KmWQ5r8eqfeTav5xAeQ';
             await processDailyData(url);
             break;
         case 'address':
-            // url = 'https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654530127\&idx\=2\&sn\=e8993a4b13a2ef3311d4d1df73d454c7\&chksm\=bd31f7348a467e22baf607b06fb3454e4f2914e100244fc81221c6a58ae31614046706b21e4a\&mpshare\=1\&scene\=23\&srcid\=0426WlF93Py0H7rgfsERy50r\&sharer_sharetime\=1650941828872\&sharer_shareid\=b547167d055d935fd3f9f56094533f76%23rd';
+            // url = 'https://mp.weixin.qq.com/s/zERWgFNJzWTydSmvjRPFLw';
             processAddressFromWechat(url);
             break;
         case 'addressmh':
-            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650544187&idx=2&sn=70cd89bbfbd407a038dcf893dd7fc4ed&chksm=875e2d25b029a4339f5ee51bff2c616132f9e2ee1746ec04507b87e84e66619f07a55300487a&mpshare=1&scene=23&srcid=0427F3X92JT0J2iKGKDwMlcx&sharer_sharetime=1651025378365&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            // url = 'https://mp.weixin.qq.com/s/t-fxXIdQqb2BLwO3rCoP8A';
             processAddressFromWechatMh(url);
             break;
         case '3':
@@ -60,7 +60,6 @@ async function main() {
             await processHistory();
             break;
         default:
-            await run();
             console.log('No match type.');
     }
 }
@@ -198,7 +197,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     var dataDateDisplay = parseDate(dataDate);
     var data = {};
     /*
-    Template:
+    Template 1:
     新增本土新冠肺炎确诊病例1249和无症状感染者8932例，其中985例确诊病例为既往无症状感染者转归，264例确诊病例和8932例无症状感染者在隔离管控中发现。
     新增本土新冠肺炎确诊病例5487和无症状感染者9545例，其中5062例确诊病例为既往无症状感染者转归，418例确诊病例和9444例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例1931例和无症状感染者15698例，其中143例确诊病例为此前无症状感染者转归，1685例确诊病例和15551例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
@@ -207,20 +206,26 @@ async function processDailyData(url, showRegions = true, reset = false) {
     新增本土新冠肺炎确诊病例41例（含2例由无症状感染者转为确诊病例）和无症状感染者128例，其中2例本土确诊病例为此前的无症状感染者转归，32例本土确诊病例和90例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例8例（含1例由无症状感染者转为确诊病例）和无症状感染者150例，其中2例确诊病例和69例无症状感染者在隔离管控中发现，1例无症状感染者为外省返沪人员协查中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例9例（其中4例3月14日已通报）和无症状感染者130例（其中34例3月14日已通报），其中5例确诊病例和102例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+    新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例无症状感染者在隔离管控中发现。
 
+    Template 2:
     新增本土新冠肺炎确诊病例1292（含既往无症状感染者转为确诊病例858例）和无症状感染者9330例，432例确诊病例和9140例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例3084例（含既往无症状感染者转为确诊病例974例）和无症状感染者17332例，实际新增本土阳性感染者19442例，其中1894例确诊病例和16998例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
      */
-    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?(?:（其中\d+例\d+月\d+日已通报）)?(?:（含\d+例由无症状感染者转为确诊病例）)?和无症状感染者(\d+)例(?:（其中\d+例\d+月\d+日已通报）)?，其中(?:(\d+)例(?:本土)?确诊病例为(?:既往|此前的?)无症状感染者转归，)?(\d+)例(?:本土)?确诊病例和(\d+)例无症状感染者在隔离管控中发现(?:，\d+例无症状感染者为外省返沪人员协查中发现)?(?:，其余在相关风险人群排查中发现)?。/;
+    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?(?:（其中\d+例\d+月\d+日已通报）)?(?:（含\d+例由无症状感染者转为确诊病例）)?和无症状感染者(\d+)例(?:（其中\d+例\d+月\d+日已通报）)?，其中(?:(\d+)例(?:本土)?确诊病例为(?:既往|此前的?)无症状感染者转归，)?(?:(\d+)例(?:本土)?确诊病例和)?(\d+)例无症状感染者在隔离管控中发现(?:，\d+例无症状感染者为外省返沪人员协查中发现)?(?:，其余在相关风险人群排查中发现)?。/;
     var summaryResult = summary.match(summaryRegex);
     var summaryResultData = [];
     if (summaryResult != null) {
-        // FIXME：3月16日的转归数据没捕获
-        summaryResultData = [0, summaryResult[1], summaryResult[2], summaryResult[3] ? summaryResult[3] : 0, summaryResult[4], summaryResult[5]];
+        summaryResultData = [0, summaryResult[1], summaryResult[2], summaryResult[3] ? summaryResult[3] : 0, summaryResult[4] ? summaryResult[4] : 0, summaryResult[5]];
     } else {
         summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?（含既往无症状感染者转为确诊病例(\d+)例）和无症状感染者(\d+)例，(?:实际新增本土阳性感染者\d+例，其中)?(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(?:，其余在相关风险人群排查中发现)?。/;
         summaryResult = summary.match(summaryRegex);
-        summaryResultData = [0, summaryResult[1], summaryResult[3], summaryResult[2], summaryResult[4], summaryResult[5]];
+        if (summaryResult != null) {
+            summaryResultData = [0, summaryResult[1], summaryResult[3], summaryResult[2], summaryResult[4], summaryResult[5]];
+        } else {
+            console.log(`summary pattern doesn't match. summary: \r\n${summary}`);
+            throw new Error('summary pattern doesn\'t match');
+        }
     }
     /*
     Template:
