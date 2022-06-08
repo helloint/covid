@@ -20,7 +20,7 @@
         .chart-title .chart-title-right a:hover {color: white; text-decoration: underline;}
         .chart-container {width:800px;height:350px;}
 
-        .region-wrap {position:relative;width:500px;}
+        .region-wrap {position:relative;width:470px;}
         #regionGrid {font-size:14px;border-collapse:collapse;}
         #regionGrid td,
         #regionGrid th {border-left-color:white;border-right-color:white;border-top-color:#366dbb;border-bottom-color:#366dbb;border-width:1px;border-style:solid;text-align:center;}
@@ -31,8 +31,6 @@
         #regionGrid .author a {color: #5585c9; text-decoration: none;}
         #regionGrid .author a:hover {text-decoration: underline;}
         #regionGrid .regions {width:78px;}
-        #regionGrid .total-title {width:78px;}
-        #regionGrid .num {width:48px;}
         #regionGrid .percent {width:78px;}
         #regionGrid .region .total {color:red;font-weight:bold;}
         #regionGrid .region .total.zero {color:gray;font-weight:bold;}
@@ -113,11 +111,18 @@
         <th class="corner"></th><th colspan="6" class="currentDate title">-</th><th class="author"><a href="https://github.com/helloint/covid">@helloint</a></th>
     </tr>
     <tr>
-        <th rowspan="2" class="regions">各区</th><th rowspan="2" class="total-title">总数</th><th colspan="3">确诊</th><th colspan="2">无症状</th>
+        <th rowspan="2" class="regions">各区</th>
+        <th rowspan="2" class="total-title">总数</th>
+        <th colspan="3">确诊</th>
+        <th colspan="2">无症状</th>
         <th rowspan="2" class="percent">7日趋势</th>
     </tr>
     <tr>
-        <th class="num">闭环</th><th class="num">转归</th><th class="num">筛查</th><th class="num">闭环</th><th class="num">筛查</th>
+        <th class="num">闭环</th>
+        <th class="num">转归</th>
+        <th class="num">筛查</th>
+        <th class="num">闭环</th>
+        <th class="num">筛查</th>
     </tr>
     </thead>
     <tfoot></tfoot>
