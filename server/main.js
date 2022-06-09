@@ -208,9 +208,15 @@ async function processDailyData(url, showRegions = true, reset = false) {
     新增本土新冠肺炎确诊病例9例（其中4例3月14日已通报）和无症状感染者130例（其中34例3月14日已通报），其中5例确诊病例和102例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例无症状感染者在隔离管控中发现。
 
+    新增本土新冠肺炎确诊病例4例和无症状感染者5例，均在隔离管控中发现。
+    TODO:
+    新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例确诊病例在隔离管控中发现。
+
     Template 2:
     新增本土新冠肺炎确诊病例1292（含既往无症状感染者转为确诊病例858例）和无症状感染者9330例，432例确诊病例和9140例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例3084例（含既往无症状感染者转为确诊病例974例）和无症状感染者17332例，实际新增本土阳性感染者19442例，其中1894例确诊病例和16998例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
+
+    summaryResultData = [0, 'confirm', 'wzz', 'zhuangui', 'confirm_bihuan', 'wzz_bihuan'];
      */
     var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?(?:（其中\d+例\d+月\d+日已通报）)?(?:（含\d+例由无症状感染者转为确诊病例）)?和无症状感染者(\d+)例(?:（其中\d+例\d+月\d+日已通报）)?，其中(?:(\d+)例(?:本土)?确诊病例为(?:既往|此前的?)无症状感染者转归，)?(?:(\d+)例(?:本土)?确诊病例和)?(\d+)例无症状感染者在隔离管控中发现(?:，\d+例无症状感染者为外省返沪人员协查中发现)?(?:，其余在相关风险人群排查中发现)?。/;
     var summaryResult = summary.match(summaryRegex);
@@ -223,8 +229,15 @@ async function processDailyData(url, showRegions = true, reset = false) {
         if (summaryResult != null) {
             summaryResultData = [0, summaryResult[1], summaryResult[3], summaryResult[2], summaryResult[4], summaryResult[5]];
         } else {
-            console.log(`summary pattern doesn't match. summary: \r\n${summary}`);
-            throw new Error('summary pattern doesn\'t match');
+            // TODO: merge into Template 1
+            summaryRegex = /新增本土新冠肺炎确诊病例(\d+)例和无症状感染者(\d+)例，均在隔离管控中发现。/;
+            summaryResult = summary.match(summaryRegex);
+            if (summaryResult != null) {
+                summaryResultData = [0, summaryResult[1], summaryResult[2], 0, summaryResult[1], summaryResult[2]];
+            } else {
+                console.log(`summary pattern doesn't match. summary: \r\n${summary}`);
+                throw new Error('summary pattern doesn\'t match');
+            }
         }
     }
     /*
