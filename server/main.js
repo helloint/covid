@@ -314,7 +314,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
                 "为此前报告的本土无症状感染者"前面的，是【无症状转归确诊】1
                  */
                 var sectionEnded = false;
-                if (content.startsWith('均为')) {
+                if (content.startsWith('均为本市闭环隔离管控人员') || content.startsWith('为本市闭环隔离管控人员')) {
                     indexOffset = startIndex === 0 ? 0 : 0;
                     sectionEnded = true;
                 } else if (content.startsWith('在风险人群筛查中发现')) {
