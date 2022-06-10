@@ -195,6 +195,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     var dateResult = summary.match(dateRegex);
     var dataDate = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
     var dataDateDisplay = parseDate(dataDate);
+    console.log(dataDateDisplay);
     var data = {};
     /*
     Template 1:
@@ -207,37 +208,50 @@ async function processDailyData(url, showRegions = true, reset = false) {
     新增本土新冠肺炎确诊病例8例（含1例由无症状感染者转为确诊病例）和无症状感染者150例，其中2例确诊病例和69例无症状感染者在隔离管控中发现，1例无症状感染者为外省返沪人员协查中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例9例（其中4例3月14日已通报）和无症状感染者130例（其中34例3月14日已通报），其中5例确诊病例和102例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例无症状感染者在隔离管控中发现。
-
-    新增本土新冠肺炎确诊病例4例和无症状感染者5例，均在隔离管控中发现。
-    TODO:
     新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例确诊病例在隔离管控中发现。
+    新增本土新冠肺炎确诊病例4例和无症状感染者5例，均在隔离管控中发现。
 
     Template 2:
     新增本土新冠肺炎确诊病例1292（含既往无症状感染者转为确诊病例858例）和无症状感染者9330例，432例确诊病例和9140例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
     新增本土新冠肺炎确诊病例3084例（含既往无症状感染者转为确诊病例974例）和无症状感染者17332例，实际新增本土阳性感染者19442例，其中1894例确诊病例和16998例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
 
-    summaryResultData = [0, 'confirm', 'wzz', 'zhuangui', 'confirm_bihuan', 'wzz_bihuan'];
+    summaryResultData = ['confirm', 'wzz', 'zhuangui', 'confirm_bihuan', 'wzz_bihuan'];
      */
-    var summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?(?:（其中\d+例\d+月\d+日已通报）)?(?:（含\d+例由无症状感染者转为确诊病例）)?和无症状感染者(\d+)例(?:（其中\d+例\d+月\d+日已通报）)?，其中(?:(\d+)例(?:本土)?确诊病例为(?:既往|此前的?)无症状感染者转归，)?(?:(\d+)例(?:本土)?确诊病例和)?(\d+)例无症状感染者在隔离管控中发现(?:，\d+例无症状感染者为外省返沪人员协查中发现)?(?:，其余在相关风险人群排查中发现)?。/;
+    var summaryRegex = new RegExp([
+        '新增本土',
+        '(?:新冠肺炎确诊病例(\\d+)[例]?)?', // 1: confirm
+        '(?:（其中\\d+例\\d+月\\d+日已通报）)?(?:（含\\d+例由无症状感染者转为确诊病例）)?',
+        '(?:和)?',
+        '(?:无症状感染者(\\d+)例)?', // 2: wzz
+        '(?:（其中\\d+例\\d+月\\d+日已通报）)?',
+        '(?:，其中)?',
+        '(?:(\\d+)例(?:本土)?确诊病例为(?:既往|此前的?)无症状感染者转归，)?', // 3: zhuangui
+        '(?:(\\d+)例(?:本土)?确诊病例)?', // 4: confirm_bihuan
+        '(?:和)?',
+        '(?:(\\d+)例无症状感染者)?', // 5: wzz_bihuan
+        '(?:在隔离管控中发现)?',
+        '(?:，\\d+例无症状感染者为外省返沪人员协查中发现)?',
+        '(?:，其余在相关风险人群排查中发现)?',
+        '(?:，(均在隔离管控中发现))?', // 6:
+        '。'
+    ].join(''));
     var summaryResult = summary.match(summaryRegex);
     var summaryResultData = [];
     if (summaryResult != null) {
-        summaryResultData = [0, summaryResult[1], summaryResult[2], summaryResult[3] ? summaryResult[3] : 0, summaryResult[4] ? summaryResult[4] : 0, summaryResult[5]];
+        summaryResultData = [parseNum(summaryResult[1]), parseNum(summaryResult[2]), parseNum(summaryResult[3]), parseNum(summaryResult[4]), parseNum(summaryResult[5])];
+        if (summaryResult[6] && summaryResultData[3] === 0 && summaryResultData[4] === 0) {
+            // 有'均在隔离管控中发现'这句话，表示所有人都是隔离管控，也就意味着 confirm_bihuan = confirm, wzz_bihuan = wzz
+            summaryResultData[3] = summaryResultData[0];
+            summaryResultData[4] = summaryResultData[1];
+        }
     } else {
         summaryRegex = /新增本土新冠肺炎确诊病例(\d+)[例]?（含既往无症状感染者转为确诊病例(\d+)例）和无症状感染者(\d+)例，(?:实际新增本土阳性感染者\d+例，其中)?(\d+)例确诊病例和(\d+)例无症状感染者在隔离管控中发现(?:，其余在相关风险人群排查中发现)?。/;
         summaryResult = summary.match(summaryRegex);
         if (summaryResult != null) {
-            summaryResultData = [0, summaryResult[1], summaryResult[3], summaryResult[2], summaryResult[4], summaryResult[5]];
+            summaryResultData = [parseNum(summaryResult[1]), parseNum(summaryResult[3]), parseNum(summaryResult[2]), parseNum(summaryResult[4]), parseNum(summaryResult[5])];
         } else {
-            // TODO: merge into Template 1
-            summaryRegex = /新增本土新冠肺炎确诊病例(\d+)例和无症状感染者(\d+)例，均在隔离管控中发现。/;
-            summaryResult = summary.match(summaryRegex);
-            if (summaryResult != null) {
-                summaryResultData = [0, summaryResult[1], summaryResult[2], 0, summaryResult[1], summaryResult[2]];
-            } else {
-                console.log(`summary pattern doesn't match. summary: \r\n${summary}`);
-                throw new Error('summary pattern doesn\'t match');
-            }
+            console.log(`summary pattern doesn't match. summary: \r\n${summary}`);
+            throw new Error('summary pattern doesn\'t match');
         }
     }
     /*
@@ -374,31 +388,31 @@ async function processDailyData(url, showRegions = true, reset = false) {
         totalResultData[1] = totalResultData[1] - 385;
     }
 
-    var deathResultData = [0, deathResult ? deathResult[1] : 0];
+    var deathResultData = [0, deathResult ? parseNum(deathResult[1]) : 0];
     if (curedResult == null) {
         // 没新增也没关系，靠累计计算。
         curedResult = [0, 0];
     }
 
     var summaryData = [
-        summaryResultData[1], summaryResultData[2], summaryResultData[3], summaryResultData[4], summaryResultData[5],
-        deathResultData[1],
+        summaryResultData[0], summaryResultData[1], summaryResultData[2], summaryResultData[3], summaryResultData[4],
+        deathResultData[0],
         totalResultData[2],
         curedResult[1],totalResultData[1], totalResultData[3], totalResultData[4],
     ];
     console.log(summaryData.join(','));
     data.daily = {
-        "total": parseInt(summaryResultData[1], 10) + parseInt(summaryResultData[2], 10),
-        "confirm": parseInt(summaryResultData[1], 10),
-        "wzz": parseInt(summaryResultData[2], 10),
-        "zhuangui": parseInt(summaryResultData[3], 10),
-        "confirm_bihuan": parseInt(summaryResultData[4], 10),
-        "wzz_bihuan": parseInt(summaryResultData[5], 10),
-        "death": parseInt(deathResultData[1], 10),
-        "confirm_shaicha": parseInt(summaryResultData[1], 10) - parseInt(summaryResultData[3], 10) - parseInt(summaryResultData[4], 10),
-        "wzz_shaicha": parseInt(summaryResultData[2], 10) - parseInt(summaryResultData[5], 10),
-        "bihuan": parseInt(summaryResultData[4], 10) + parseInt(summaryResultData[5], 10),
-        "shaicha": parseInt(summaryResultData[1], 10) - parseInt(summaryResultData[3], 10) - parseInt(summaryResultData[4], 10) + parseInt(summaryResultData[2], 10) - parseInt(summaryResultData[5], 10),
+        "total": summaryResultData[0] + summaryResultData[1],
+        "confirm": summaryResultData[0],
+        "wzz": summaryResultData[1],
+        "zhuangui": summaryResultData[2],
+        "confirm_bihuan": summaryResultData[3],
+        "wzz_bihuan": summaryResultData[4],
+        "death": deathResultData[0],
+        "confirm_shaicha": summaryResultData[0] - summaryResultData[2] - summaryResultData[3],
+        "wzz_shaicha": summaryResultData[1] - summaryResultData[4],
+        "bihuan": summaryResultData[3] + summaryResultData[4],
+        "shaicha": summaryResultData[0] - summaryResultData[2] - summaryResultData[3] + summaryResultData[1] - summaryResultData[4],
         "cured": parseInt(curedResult[1], 10),
         "curr_confirm": parseInt(totalResultData[2], 10),
         "total_cured": parseInt(totalResultData[1], 10),
@@ -780,6 +794,10 @@ function parseDate(date) {
     var dd = date.getDate();
     dd = dd >= 10 ? dd : '0' + dd;
     return `${yyyy}-${mm}-${dd}`;
+}
+
+function parseNum(str) {
+    return str ? parseInt(str, 10) : 0;
 }
 
 main();
