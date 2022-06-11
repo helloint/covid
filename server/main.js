@@ -60,7 +60,7 @@ async function main() {
             await processHistory();
             break;
         default:
-            console.log('No match type.');
+            await getLatestTopicsFromSHFB(true);
     }
 }
 
@@ -418,6 +418,14 @@ async function processDailyData(url, showRegions = true, reset = false) {
         "total_cured": parseInt(totalResultData[1], 10),
         "curr_heavy": parseInt(totalResultData[3], 10),
         "curr_cri": parseInt(totalResultData[4], 10),
+        /*
+        API获取的文章链接是长链接：
+        https://mp.weixin.qq.com/s\?__biz\=MjM5NTA5NzYyMA\=\=\&mid\=2654547041\&idx\=1\&sn\=e6da7b2138e7f9317929040d1e80a3cd\&chksm\=bd30311a8a47b80cd3a0cf0d9ad2d360cef6757a171c3e5d9e65da7993cddf30657b45401bb4\#rd
+        目前好像没办法通过API获取如下短链接：
+        https://mp.weixin.qq.com/s/qfDsNNAmHN9IFg-1L-XAOg
+        据说短链接里的参数是基于长链接query string里的sn生成的，逻辑在微信app里，就看有谁能反编译出来了。
+        Reference：https://soaked.in/2020/08/wechat-platform-url/#url-formats-overview
+         */
         "url": url,
     };
 
