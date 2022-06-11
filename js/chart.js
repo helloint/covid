@@ -12,8 +12,15 @@ function init() {
             originalData = data;
 
             renderUI();
-            renderCalendar();
             initTimeMachine();
+
+            $('#renderCalendar').click(() => {
+                // The calendar will affect the canvas download on Safari, so turn off it by default as a workaround.
+                // Guess the issue is because of too many canvas and cause some memory issue.
+                $('#calendar').show();
+                renderCalendar();
+                $(this).hide();
+            });
         });
 }
 
@@ -588,16 +595,21 @@ function renderCharts(data) {
         }
     });
     $container.empty();
+    // kanban chart
+    $('#chartWrap').append(`<input type="checkbox" name="downloadChoice0" value="0"
+            ${chartsDownloadDefaultSetting[0][0] ? 'checked="checked"' : ''} style="position: absolute; right: -29px; top: 35px;"/>`);
+    $('#chartWrap').append(`<input type="checkbox" name="downloadChoice1" value="0"
+            ${chartsDownloadDefaultSetting[1][0] ? 'checked="checked"' : ''} style="position: absolute; right: -64px; top: 35px;"/>`);
     options.forEach((option, i) => {
         $container.append(`<div id="chart${i}" class="chart-container"></div>`);
         const chart = echarts.init(document.getElementById('chart' + i), 'dark');
         chart.setOption(option);
         charts.push(chart);
 
-        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice0" value="${i}"
-            ${chartsDownloadDefaultSetting[0][i] ? 'checked="checked"' : ''} style="position: absolute; right: -29px; top: ${35 + i * 20}px;"/>`);
-        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice1" value="${i}"
-            ${chartsDownloadDefaultSetting[1][i] ? 'checked="checked"' : ''} style="position: absolute; right: -64px; top: ${35 + i * 20}px;"/>`);
+        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice0" value="${i + 1}"
+            ${chartsDownloadDefaultSetting[0][i + 1] ? 'checked="checked"' : ''} style="position: absolute; right: -29px; top: ${35 + (i + 1) * 20}px;"/>`);
+        $('#chartWrap').append(`<input type="checkbox" name="downloadChoice1" value="${i + 1}"
+            ${chartsDownloadDefaultSetting[1][i + 1] ? 'checked="checked"' : ''} style="position: absolute; right: -64px; top: ${35 + (i + 1) * 20}px;"/>`);
     });
 }
 
@@ -680,7 +692,7 @@ function downloadChart(index) {
 
 
 function renderCalendar() {
-    var calendarData = [];
+    const calendarData = [];
     Object.entries(originalData.daily).forEach(([date, item]) => {
         calendarData.push([date, item.total]);
     });
