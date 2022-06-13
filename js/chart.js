@@ -602,7 +602,7 @@ function renderCharts(data) {
             ${chartsDownloadDefaultSetting[1][0] ? 'checked="checked"' : ''} style="position: absolute; right: -64px; top: 35px;"/>`);
     options.forEach((option, i) => {
         $container.append(`<div id="chart${i}" class="chart-container"></div>`);
-        const chart = echarts.init(document.getElementById('chart' + i), 'dark');
+        const chart = echarts.init(document.getElementById('chart' + i), 'dark', {devicePixelRatio: 2});
         chart.setOption(option);
         charts.push(chart);
 
@@ -647,9 +647,9 @@ function downloadChart(index) {
         downloadSettings.push($(item).prop('checked') ? 1 : 0);
     });
     Promise.all([
-        html2canvas(document.querySelector("#chartTitle")),
-        html2canvas(document.querySelector("#kanban")),
-        html2canvas(document.querySelector("#footer")),
+        html2canvas(document.querySelector("#chartTitle"), {scale: 2}),
+        html2canvas(document.querySelector("#kanban"), {scale: 2}),
+        html2canvas(document.querySelector("#footer"), {scale: 2}),
     ]).then(([titleCanvas, kanbanCanvas, footerCanvas]) => {
         // Calculate total height first
         let totalHeight = titleCanvas.height;
