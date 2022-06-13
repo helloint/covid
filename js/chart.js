@@ -1,7 +1,16 @@
+/*
+把Scale固定在2。这是因为iPhone Safari下，这个值是3，从而引发一系列和内存限制相关的问题：
+1. iOS Safari 不能处理像素超过16777216大小的Canvas（4096*4096），而在iOS上由于devicePixelRatio是3，在选择5个chart时，会超过限制报错：Canvas area exceeds the maximum limit (width * height > 16777216).
+Reference: https://pqina.nl/blog/canvas-area-exceeds-the-maximum-limit/
+2. Canvas内存超限384M (iOS Safari 15, 早期的版本限制更低): Total canvas memory use exceeds the maximum limit (384 MB).
+Reference: https://pqina.nl/blog/total-canvas-memory-use-exceeds-the-maximum-limit/
+ */
+const scale = 2;
 let lastDay = null; // '2022-05-22'
 let currentDate = null; // '2022-05-10'
 let originalData = null;
 let timeMachineIntervalId = null;
+const regionCharts = [];
 function init() {
     fetch(`data/dailyTotal.json`)
         .then(response => response.json())
@@ -183,6 +192,14 @@ const regionTrendChartOption = {
 };
 
 function renderRegion(data) {
+    regionCharts.forEach(chart => {
+        if (chart) {
+            chart.dispose();
+            chart = null;
+        }
+    });
+    regionCharts.length = 0;
+
     $('#regionGrid').html($('#regionGridTmpl').html());
     const regionData = data.regions;
     const regionSummary = [];
@@ -243,7 +260,7 @@ function renderRegion(data) {
     $('#regionGrid tbody').append(tbody);
 
     regionSummary.forEach((region) => {
-        const chart = echarts.init($(`.region-${region.name} .num-diff-1`)[0]);
+        const chart = echarts.init($(`.region-${region.name} .num-diff-1`)[0], {devicePixelRatio: scale});
         chart.setOption($.extend(true, {}, regionTrendChartOption, {
             // yAxis: {
             //     max: recentMax,
@@ -254,6 +271,7 @@ function renderRegion(data) {
                 }
             ],
         }));
+        regionCharts.push(chart);
     });
 
     const dailyData = data.daily;
@@ -302,7 +320,7 @@ function renderRegion(data) {
                 <th colspan="2" class="num-wzz">${currentDailyData.wzz}</th>
             </tr>`;
     $('#regionGrid tfoot').append(tfoot);
-    const chart = echarts.init($('.region-total .num-diff-1')[0]);
+    const chart = echarts.init($('.region-total .num-diff-1')[0], {devicePixelRatio: scale});
     chart.setOption($.extend(true, {}, regionTrendChartOption, {
         series: [
             {
@@ -310,6 +328,7 @@ function renderRegion(data) {
             }
         ],
     }));
+    regionCharts.push(chart);
 }
 
 function getDailyData(data, key) {
@@ -602,7 +621,7 @@ function renderCharts(data) {
             ${chartsDownloadDefaultSetting[1][0] ? 'checked="checked"' : ''} style="position: absolute; right: -64px; top: 35px;"/>`);
     options.forEach((option, i) => {
         $container.append(`<div id="chart${i}" class="chart-container"></div>`);
-        const chart = echarts.init(document.getElementById('chart' + i), 'dark', {devicePixelRatio: 2});
+        const chart = echarts.init(document.getElementById('chart' + i), 'dark', {devicePixelRatio: scale});
         chart.setOption(option);
         charts.push(chart);
 
@@ -633,7 +652,7 @@ function processTableData(data) {
 }
 
 function downloadTable() {
-    html2canvas(document.querySelector("#regionGrid")).then(canvas => {
+    html2canvas(document.querySelector("#regionGrid"), {scale: scale}).then(canvas => {
         var link = document.createElement('a');
         link.download = `region.${getTimestamp()}.png`;
         link.href = canvas.toDataURL("image/png");
@@ -647,9 +666,9 @@ function downloadChart(index) {
         downloadSettings.push($(item).prop('checked') ? 1 : 0);
     });
     Promise.all([
-        html2canvas(document.querySelector("#chartTitle"), {scale: 2}),
-        html2canvas(document.querySelector("#kanban"), {scale: 2}),
-        html2canvas(document.querySelector("#footer"), {scale: 2}),
+        html2canvas(document.querySelector("#chartTitle"), {scale: scale}),
+        html2canvas(document.querySelector("#kanban"), {scale: scale}),
+        html2canvas(document.querySelector("#footer"), {scale: scale}),
     ]).then(([titleCanvas, kanbanCanvas, footerCanvas]) => {
         // Calculate total height first
         let totalHeight = titleCanvas.height;
@@ -761,7 +780,7 @@ function renderCalendar() {
             },
         },
     };
-    const chart = echarts.init(document.getElementById('calendar'), 'dark');
+    const chart = echarts.init(document.getElementById('calendar'), 'dark', {devicePixelRatio: scale});
     chart.setOption(option);
 }
 
