@@ -340,7 +340,7 @@ function getDailyData(data, key) {
 }
 
 const charts = [];
-const chartsDownloadDefaultSetting = [[1, 1, 1], [0, 0, 0, 1, 1, 1]];
+const chartsDownloadDefaultSetting = [[1, 1, 1, 1], [0, 0, 0, 1, 1, 1]];
 
 const commonChartOption = {
     title: {
