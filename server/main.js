@@ -59,14 +59,23 @@ async function main() {
         case 'history':
             await processHistory();
             break;
+        case 'addrhistory':
+            await processAddressHistory();
+            break;
         default:
-            await getLatestTopicsFromSHFB(true);
+            console.log('No match type.');
     }
 }
 
 async function processHistory() {
     for (const link of config.links) {
         await processDailyData(link[1], false, true);
+    }
+}
+
+async function processAddressHistory() {
+    for (const link of config.addressLinks) {
+        await processAddressFromWechat(link);
     }
 }
 
@@ -531,12 +540,11 @@ async function getListPage() {
     });
 }
 
-function processAddressFromWechat(url) {
-    getAddressFromWechat(url).then(({date, addresses}) => {
-        if (addresses) {
-            writeDailyAddressesToFile(date, addresses);
-        }
-    });
+async function processAddressFromWechat(url) {
+    const {date, addresses} = await getAddressFromWechat(url);
+    if (addresses) {
+        writeDailyAddressesToFile(date, addresses);
+    }
 }
 
 function processAddressFromWechatMh(url) {
@@ -695,21 +703,22 @@ async function getAddressFromWechat(url) {
     console.log(`date: ${date}`);
 
     let districtName = null;
-    $('#js_content section[data-role=title],#js_content section[data-id="72469"]').each((index, item) => {
+    $('#js_content section[data-role=title]').each((index, item) => {
         if ($(item).attr('data-role') === 'title') {
             districtName = $(item).find('section[data-brushtype="text"]').text();
-        } else if ($(item).attr('data-id') === '72469') {
-            $(item).find('section section[data-autoskip="1"] p').each((index, addressItem) => {
-                let address = $(addressItem).find('span').text();
-                let results = parseAddress(address);
-                if (results) {
-                    results.forEach(item => {
-                        addresses.push(`${districtName}${item}`);
-                    });
-                }
-            });
-        } else {
-            console.log('something wrong!');
+
+            if (districtName) {
+                console.log(`districtName ${districtName}`);
+                $(item).next().find('section section[data-autoskip="1"] p').each((index, addressItem) => {
+                    let address = $(addressItem).find('span').text();
+                    let results = parseAddress(address);
+                    if (results) {
+                        results.forEach(item => {
+                            addresses.push(`${districtName}${item}`);
+                        });
+                    }
+                });
+            }
         }
     });
 
@@ -771,6 +780,13 @@ function parseAddress(content) {
     content = content && content.trim();
     if (!content || content.startsWith('2022年') || content.startsWith('已对相关居住地')) {
         return null;
+    }
+
+    if (content.indexOf('已通报') > -1) {
+        content = content.replace(/（\d+月\d+日已通报）/, '');
+    }
+    if (content.indexOf('住宅') > -1) {
+        content = content.replace(/（住宅）/, '').replace(/住宅小区/, '');
     }
 
     let ret = [];
