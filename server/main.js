@@ -128,7 +128,8 @@ async function run() {
         if (addressData.date !== yesterdayStr) {
             topic = topics.find((item) => {
                 // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
-                const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地信息');
+                // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
+                const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
                 const res = item.title.match(regex);
                 if (res) {
                     return true;

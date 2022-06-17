@@ -91,5 +91,38 @@ config.links = [
     ['2022-05-21','https://mp.weixin.qq.com/s/q385QELBASHyzn1xVYVNlA'],
     ['2022-05-22','https://mp.weixin.qq.com/s/nd-S1WZ_XfCZFFmTQ4oKIw'],
 ];
+config.addressLinks = [
+    'https://mp.weixin.qq.com/s/rQ385zJfnJQVH1A9TE98TA',//0518
+    'https://mp.weixin.qq.com/s/HIjthO2QrWMs3awazdyI5Q',
+    'https://mp.weixin.qq.com/s/APzs3KMMjfzAZzhypMXAEg',
+    'https://mp.weixin.qq.com/s/XWA8Pzf0DQ5i92si5Epsgg',
+    'https://mp.weixin.qq.com/s/FE5FmXxk7180mjqoj9jOSA',
+    'https://mp.weixin.qq.com/s/-8XvTb6gxkgfNzMxQ_COZw',
+    'https://mp.weixin.qq.com/s/Zpll7k6wZfJiPNeV8sz6Ig',
+    'https://mp.weixin.qq.com/s/ofoMUIJOQNAtwGXn7Xqr3g',
+    'https://mp.weixin.qq.com/s/edhko1xae7do5FhPSER7Qw',
+    'https://mp.weixin.qq.com/s/A5CZRqmuMTdmYcZhdIi9rQ',
+    'https://mp.weixin.qq.com/s/PHW04o9E4HKgkGE6wt3suA',
+    'https://mp.weixin.qq.com/s/kuCaSb1fFdzaUhwsc6KPSA',
+    'https://mp.weixin.qq.com/s/1AsoUPz51QTmNUPItNUCFg',
+    'https://mp.weixin.qq.com/s/1AsoUPz51QTmNUPItNUCFg',
+    'https://mp.weixin.qq.com/s/CaM334YdoAxbwA8PJ19wcg',
+    'https://mp.weixin.qq.com/s/UnPUsNGUyL1_NxBKMQyZpA', //0601
+    'https://mp.weixin.qq.com/s/eYimdanb4krg7j_vAJd33g',
+    'https://mp.weixin.qq.com/s/z-v2eFk7btPaXEBZro8sqQ',
+    'https://mp.weixin.qq.com/s/2zJLbgq0spJfXHY9BLMhWA',
+    'https://mp.weixin.qq.com/s/zERWgFNJzWTydSmvjRPFLw',
+    'https://mp.weixin.qq.com/s/ft2t7EVyT96YmwXfvd-zQg',
+    'https://mp.weixin.qq.com/s/W9tBwbc2tSNe7-zDWw_ViA',
+    'https://mp.weixin.qq.com/s/OKxw0qxTtCy_utS5ilh6Lw',
+    'https://mp.weixin.qq.com/s/IpYd6G-lavQmufm1DQiFVg',
+    'https://mp.weixin.qq.com/s/Cv94y7zJ1THMXBkwKloHkA', // 0610
+    'https://mp.weixin.qq.com/s/BUs1bbsc_YTmyFkJ-xdPtw',
+    'https://mp.weixin.qq.com/s/7tHJuJUtYEEIqGlywmWpBg',
+    'https://mp.weixin.qq.com/s/Brq4G4gZOj2y_F4O8cPm2A',
+    'https://mp.weixin.qq.com/s/jNlwZj7s19emjB58lE9rzg',
+    'https://mp.weixin.qq.com/s/SHpQtAgzJRTHsypyDtEU3w',
+    'https://mp.weixin.qq.com/s/86Ly4-B8zpVAtay0syJuwg',
+];
 
 module.exports = config;
