@@ -718,8 +718,8 @@ async function getAddressFromWechat(url) {
             if (districtName) {
                 console.log(`districtName ${districtName}`);
                 $(item).next().find('section section[data-autoskip="1"] p').each((index, addressItem) => {
-                    let address = $(addressItem).find('span').text();
-                    let results = parseAddress(address);
+                    let addressContent = $(addressItem).find('span:first').text();
+                    let results = parseAddress(addressContent);
                     if (results) {
                         results.forEach(item => {
                             addresses.push(`${districtName}${item}`);
