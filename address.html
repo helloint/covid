@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>地址信息</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font: 12px Arial, Helvetica, sans-serif;
+        }
+        table.dataTable th,
+        table.dataTable td{
+            text-align: center !important;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.12.0/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.0/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/3.2.3/css/fixedHeader.dataTables.min.css">
+    <script src="https://cdn.datatables.net/fixedheader/3.2.3/js/dataTables.fixedHeader.min.js"></script>
+    <script type="text/javascript" src="data/estateCache.js"></script>
+    <script>
+        var addressData = [];
+        var addressMap = new Map();
+        var labels = {
+            'index': '序号',
+            'name': '地点名',
+            'address': '地址',
+            'count': '上榜次数',
+        };
+        function init() {
+            fetch(`data/addressTotal.json`)
+                .then(response => response.json())
+                .then(data => {
+                    Object.entries(data).forEach(([date, addresses]) => {
+                        addresses.forEach(address => {
+                            addressMap.set(address, addressMap.has(address) ? addressMap.get(address) + 1 : 1);
+                        });
+                    });
+
+                    addressData = Array.from(addressMap, ([address, count]) => ({ address, count }));
+                    addressData = addressData.sort((a, b) => b.count - a.count).filter(a => a.count > 1);
+
+                    var html = `<table id="covidData" class="dataTable display cell-border compact hover nowrap row-border" style="width: auto;"><thead><tr>`;
+                    html += `<th>${labels['index']}</th>`;
+                    html += `<th>${labels['name']}</th>`;
+                    html += `<th>${labels['address']}</th>`;
+                    html += `<th>${labels['count']}</th>`;
+
+                    html += `</tr></thead><tbody>`;
+                    addressData.forEach(({address, count}, index) => {
+                        var row = `<tr>`;
+                        row += `<td>${index + 1}</td>`;
+                        row += `<td>${estateCache.get(address)?.title || address}</td>`;
+                        row += `<td>${address}</td>`;
+                        row += `<td>${count}</td>`;
+                        row += `</tr>`;
+                        html += row;
+                    });
+                    html += `</tbody></table>`;
+                    $('#container').html(html);
+                    $('#covidData').DataTable({
+                        fixedHeader: true,
+                        autoWidth: false,
+                        columns: [
+                            { "width": "50px" },
+                            { "width": "200px" },
+                            { "width": "200px" },
+                            { "width": "50px" },
+                        ],
+                        pageLength: 100,
+                        ordering:  false,
+                    });
+                });
+        }
+    </script>
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?fa2bf060727b6a09e723fd60722a3985";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+</head>
+<body onload="init()">
+<div id="container"></div>
+</body>
+</html>
