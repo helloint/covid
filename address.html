@@ -8,9 +8,16 @@
         body {
             font: 12px Arial, Helvetica, sans-serif;
         }
+        #container {
+            width: 600px;
+        }
         table.dataTable th,
         table.dataTable td{
             text-align: center !important;
+        }
+        .date-list {
+            display: flex;
+            flex-wrap: wrap;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -34,35 +41,47 @@
                 .then(data => {
                     Object.entries(data).forEach(([date, addresses]) => {
                         addresses.forEach(address => {
-                            addressMap.set(address, addressMap.has(address) ? addressMap.get(address) + 1 : 1);
+                            if (!addressMap.has(address)) {
+                                addressMap.set(address, [date]);
+                            } else {
+                                addressMap.get(address).push(date);
+                            }
                         });
                     });
 
-                    addressData = Array.from(addressMap, ([address, count]) => ({ address, count }));
-                    addressData = addressData.sort((a, b) => b.count - a.count).filter(a => a.count > 1);
+                    addressData = Array.from(addressMap, ([address, dateList]) => ({ address, dateList }));
+                    addressData.sort((a, b) => b.dateList.length - a.dateList.length);
 
-                    var html = `<table id="covidData" class="dataTable display cell-border compact hover nowrap row-border" style="width: auto;"><thead><tr>`;
+                    var html = `<table id="covidData" class="dataTable display cell-border compact hover nowrap row-border"><thead><tr>`;
+                    html += `<th></th>`;
                     html += `<th>${labels['index']}</th>`;
                     html += `<th>${labels['name']}</th>`;
                     html += `<th>${labels['address']}</th>`;
                     html += `<th>${labels['count']}</th>`;
 
                     html += `</tr></thead><tbody>`;
-                    addressData.forEach(({address, count}, index) => {
+                    addressData.forEach(({address, dateList}, index) => {
                         var row = `<tr>`;
+                        row += `<td></td>`;
                         row += `<td>${index + 1}</td>`;
                         row += `<td>${estateCache.get(address)?.title || address}</td>`;
                         row += `<td>${address}</td>`;
-                        row += `<td>${count}</td>`;
+                        row += `<td>${dateList.length}</td>`;
                         row += `</tr>`;
                         html += row;
                     });
                     html += `</tbody></table>`;
                     $('#container').html(html);
-                    $('#covidData').DataTable({
+                    var dataTable = $('#covidData').DataTable({
                         fixedHeader: true,
                         autoWidth: false,
                         columns: [
+                            {
+                                className: 'dt-control',
+                                orderable: false,
+                                data: null,
+                                defaultContent: '',
+                            },
                             { "width": "50px" },
                             { "width": "200px" },
                             { "width": "200px" },
@@ -70,6 +89,28 @@
                         ],
                         pageLength: 100,
                         ordering:  false,
+                    });
+
+                    /* Formatting function for row details - modify as you need */
+                    function format(d) {
+                        // `d` is the original data object for the row
+                        return `<div class="date-list">${addressMap.get(d[3]).map(a => `<span>${a}</span>`).join(',&nbsp;')}</div>`;
+                    }
+
+                    // Add event listener for opening and closing details
+                    $('#covidData tbody').on('click', 'td.dt-control', function () {
+                        var tr = $(this).closest('tr');
+                        var row = dataTable.row(tr);
+
+                        if (row.child.isShown()) {
+                            // This row is already open - close it
+                            row.child.hide();
+                            tr.removeClass('shown');
+                        } else {
+                            // Open this row
+                            row.child(format(row.data())).show();
+                            tr.addClass('shown');
+                        }
                     });
                 });
         }
