@@ -8,6 +8,10 @@
         body {
             font: 12px Arial, Helvetica, sans-serif;
         }
+        h1 {
+            width: 600px;
+            text-align: center;
+        }
         #container {
             width: 600px;
         }
@@ -30,7 +34,7 @@
         var addressData = [];
         var addressMap = new Map();
         var labels = {
-            'index': '序号',
+            'index': '排名',
             'name': '地点名',
             'address': '地址',
             'count': '上榜次数',
@@ -126,6 +130,7 @@
     </script>
 </head>
 <body onload="init()">
+<h1 class="title">《上海发布》上榜次数统计</h1>
 <div id="container"></div>
 </body>
 </html>
