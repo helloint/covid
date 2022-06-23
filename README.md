@@ -3,6 +3,7 @@
 - Map: <https://helloint.xyz/covid/map.html>
 - Chart: <https://helloint.xyz/covid/chart.html>
 - Data: <https://helloint.xyz/covid/grid.html>
+- Address: <https://helloint.xyz/covid/address.html>
 
 ## introduction
 [上海疫情地图数据报表的处理和自动化](https://zhuanlan.zhihu.com/p/515840359)(知乎)
