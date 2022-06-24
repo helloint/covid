@@ -286,6 +286,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     无症状感染者6087—无症状感染者7208，居住于徐汇区，
     病例1—病例26，居住于浦东新区，
     该病例居住于宝山区，
+    该无症状感染者居住于宝山区，
     均为本市闭环隔离管控人员
     在风险人群筛查中发现新冠病毒核酸检测结果异常，即被隔离管控。
     为此前报告的本土无症状感染者
@@ -295,7 +296,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
         // 本土无症状感染者情况
         var subjectTitle = $(item).find('section section:first').text().trim();
         var regex = null;
-        var singleRegex = /^该病例居住于([\u4e00-\u9fa5]+区)/;
+        var singleRegex = null;
         var startIndex = 0;
         if (subjectTitle === '本土病例情况') {
             startIndex = 0;
@@ -307,9 +308,11 @@ async function processDailyData(url, showRegions = true, reset = false) {
             病例1，女，57岁，居住于宝山区丹霞山路257弄，
              */
             regex = /^病例(\d+)([—、]病例(\d+))?，(?:[男女]，)?(?:[\d]+岁，)?居住于([\u4e00-\u9fa5]+区)/;
+            singleRegex = /^该病例居住于([\u4e00-\u9fa5]+区)/;
         } else if (subjectTitle === '本土无症状感染者情况') {
             startIndex = 3;
             regex = /^无症状感染者(\d+)([—、]无症状感染者(\d+))?，(?:[男女]，)?(?:[\d]+岁，)?居住于([\u4e00-\u9fa5]+区)/;
+            singleRegex = /^该无症状感染者居住于([\u4e00-\u9fa5]+区)/;
         }
 
         var indexOffset = 0;
