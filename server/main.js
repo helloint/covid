@@ -111,7 +111,7 @@ async function run() {
         var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
         if (dailyData.date !== yesterdayStr) {
             topic = topics.find((item) => {
-                const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海新增本土确诊病例');
+                const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
                 const res = item.title.match(regex);
                 if (res) {
                     return true;
