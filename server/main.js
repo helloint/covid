@@ -260,8 +260,14 @@ async function processDailyData(url, showRegions = true, reset = false) {
         if (summaryResult != null) {
             summaryResultData = [parseNum(summaryResult[1]), parseNum(summaryResult[3]), parseNum(summaryResult[2]), parseNum(summaryResult[4]), parseNum(summaryResult[5])];
         } else {
-            console.log(`summary pattern doesn't match. summary: \r\n${summary}`);
-            throw new Error('summary pattern doesn\'t match');
+            summaryRegex = /无新增本土新冠肺炎确诊病例和无症状感染者/;
+            summaryResult = summary.match(summaryRegex);
+            if (summaryResult != null) {
+                summaryResultData = [0, 0, 0, 0, 0];
+            } else {
+                console.log(`summary pattern doesn't match. summary: \r\n${summary}`);
+                throw new Error('summary pattern doesn\'t match');
+            }
         }
     }
     /*
@@ -277,7 +283,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     新增本土新冠肺炎确诊病例260例，含2例由无症状感染者转为确诊病例。治愈出院23例
     新增本土新冠肺炎确诊病例31例。治愈出院8例。
      */
-    var regexCured = /新增本土新冠肺炎确诊病例\d+例(?:，含\d+例由(?:既往)?无症状感染者转为确诊病例)?。(?:新增)?治愈出院(\d+)例/;
+    var regexCured = /新增本土新冠肺炎确诊病例(?:\d+例)?(?:，含\d+例由(?:既往)?无症状感染者转为确诊病例)?。(?:新增)?治愈出院(\d+)例/;
     var curedResult = null;
 
     /*
