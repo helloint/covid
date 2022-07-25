@@ -2,6 +2,7 @@ var config = {};
 config.fakeid = 'MjM5NTA5NzYyMA==';
 config.token = '';
 config.cookie = '';
+config.key = '';
 config.links = [
     // ['2022-02-26','https://mp.weixin.qq.com/s/jpToJCcWCPWnCHvH8jOY2w'],
     // ['2022-02-27','https://mp.weixin.qq.com/s/8CC7x6vW2TKI6sKqOekMGg'],

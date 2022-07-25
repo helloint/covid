@@ -33,6 +33,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.TOKEN }}
           COOKIE: ${{ secrets.COOKIE }}
+          KEY: ${{ secrets.KEY }}
 
       - name: Push data
         run: |

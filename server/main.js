@@ -20,11 +20,13 @@ const fs = require('fs');
 const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 const config = require('./config.js');
+const axios = require("axios");
 const dataFilePath = `${__dirname}/../data`;
 
 if (!config.token) {
     config.token = process.env.TOKEN;
     config.cookie = process.env.COOKIE;
+    config.key = process.env.KEY;
 }
 
 async function main() {
@@ -168,7 +170,6 @@ async function getLatestTopicsFromSHFB(logInfo) {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36",
         "cookie": config.cookie,
     }
-    const axios = require('axios');
     const response = await axios.get(url, {params: queryData, headers: headers});
     if (response.status === 200) {
         if (response.data && response.data.app_msg_list) {
@@ -181,6 +182,7 @@ async function getLatestTopicsFromSHFB(logInfo) {
             if (response.data && response.data.base_resp && response.data.base_resp.err_msg) {
                 // Token expired
                 console.log(response.data.base_resp.err_msg);
+                sendNotify('covid_session_expired');
                 throw new Error(response.data.base_resp.err_msg);
             } else {
                 console.log(`No 'app_msg_list' found.`);
@@ -191,6 +193,12 @@ async function getLatestTopicsFromSHFB(logInfo) {
 
     console.log(`error ${response.status}`);
     return null;
+}
+
+function sendNotify(errCode) {
+    const webHookUrl = `https://maker.ifttt.com/trigger/${errCode}/json/with/key/${config.key}`;
+    console.log(`webHookUrl: ${webHookUrl}`);
+    axios.get(webHookUrl);
 }
 
 async function processDailyData(url, showRegions = true, reset = false) {
