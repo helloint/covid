@@ -122,6 +122,7 @@ async function run() {
             if (topic) {
                 console.log('processing daily data...');
                 await processDailyData(topic.url);
+                sendNotify('covid_daily_done');
             } else {
                 console.log('Daily topic not ready.');
             }
@@ -140,6 +141,7 @@ async function run() {
             if (topic) {
                 console.log('processing address data...');
                 await processAddressFromWechat(topic.url);
+                sendNotify('covid_address_done');
             } else {
                 console.log('Address topic not ready.');
             }
