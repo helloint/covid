@@ -270,7 +270,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
         if (summaryResult != null) {
             summaryResultData = [parseNum(summaryResult[1]), parseNum(summaryResult[3]), parseNum(summaryResult[2]), parseNum(summaryResult[4]), parseNum(summaryResult[5])];
         } else {
-            summaryRegex = /无新增本土新冠肺炎确诊病例和无症状感染者/;
+            summaryRegex = /无新增本土新冠肺炎确诊病例和(?:本土)?无症状感染者/;
             summaryResult = summary.match(summaryRegex);
             if (summaryResult != null) {
                 summaryResultData = [0, 0, 0, 0, 0];
