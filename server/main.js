@@ -496,6 +496,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
 
     const dailyFeed = `${dataFilePath}/daily.json`;
     const dailyTotalFeed = `${dataFilePath}/dailyTotal.json`;
+    const dailyTotalSlimFeed = `${dataFilePath}/dailyTotalSlim.json`;
     const dailyTotalData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
     data.date = parseDate(dataDate);
     if (reset && dailyTotalData.daily[data.date]) delete dailyTotalData.daily[data.date];
@@ -514,7 +515,11 @@ async function processDailyData(url, showRegions = true, reset = false) {
     });
     dailyTotalData.total = totalNums;
     data.total = totalNums;
+    let dailyTotalSlimData = JSON.parse(JSON.stringify(dailyTotalData));
+    delete dailyTotalSlimData.regions;
+    Object.entries(dailyTotalSlimData.daily).forEach(([k,v]) => delete v.url);
     fs.writeFileSync(dailyTotalFeed, JSON.stringify(dailyTotalData), 'utf8');
+    fs.writeFileSync(dailyTotalSlimFeed, JSON.stringify(dailyTotalSlimData), 'utf8');
     fs.writeFileSync(dailyFeed, JSON.stringify(data), 'utf8');
 }
 
