@@ -13,7 +13,6 @@
 
 数据来源有2个：卫健委官网 和 上海发布微信公众号。
 上海发布的数据更快。而每个区的公众号又比上海发布更快。
-
  */
 
 const fs = require('fs');
@@ -52,11 +51,11 @@ async function main() {
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             await getRegionStatusList(arg0);
             break;
-        case 'list':
-            await getListPage();
+        case 'listwsj':
+            await getListPageFromWsj();
             break;
-        case 'shfb':
-            await getLatestTopicsFromSHFB(true);
+        case 'listwechat':
+            await getLatestTopicsFromWeChat(arg0, true);
             break;
         case 'history':
             await processHistory();
@@ -64,6 +63,7 @@ async function main() {
         case 'addrhistory':
             await processAddressHistory();
             break;
+        // TODO: 获取全国疫情通报数据 http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml
         default:
             console.log('No match type.');
     }
@@ -108,7 +108,7 @@ async function run(override) {
         return;
     }
 
-    var topics = await getLatestTopicsFromSHFB();
+    var topics = await getLatestTopicsFromWeChat();
     if (topics) {
         let topic = null;
         var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
@@ -153,14 +153,49 @@ async function run(override) {
 }
 
 /**
- * This will return latest 11 topics from 上海发布 wechat public account
+ * This will return latest topics from wechat public account
  */
-async function getLatestTopicsFromSHFB(logInfo) {
+async function getLatestTopicsFromWeChat(total = 5, enableLog) {
+    const dateOptions = {
+        hourCycle: 'h23',
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    };
+    const ret = [];
+    let pageNum = 0;
+    do {
+        try {
+            const result = await getLatestTopicsFromWeChatByPage(pageNum);
+            if (result != null) {
+                ret.push(...result);
+                enableLog && result.forEach(topic => {
+                    console.log(`[${new Date(topic.date).toLocaleString('zh-CN', dateOptions)}]${topic.title} ${topic.url}`);
+                });
+            } else {
+                break;
+            }
+        } catch (e) {
+            console.log(response.data.base_resp.err_msg);
+            !enableLog && sendNotify('covid_session_expired');
+            break;
+        }
+        pageNum++;
+    } while (ret.length < total)
+
+    return ret;
+}
+
+async function getLatestTopicsFromWeChatByPage(pageNum) {
     const url = 'https://mp.weixin.qq.com/cgi-bin/appmsg';
+    const pageSize = 5;
     const queryData = {
         action: 'list_ex',
-        begin: 0,
-        count: 5,
+        begin: pageNum * pageSize,
+        count: pageSize, // 这个参数没起作用。现在固定返回5个appmsgid，而每条appmsgid里可能有多篇文章。
         fakeid: config.fakeid, // 公众号的唯一标识
         type: 9,
         query: '',
@@ -176,25 +211,18 @@ async function getLatestTopicsFromSHFB(logInfo) {
     const response = await axios.get(url, {params: queryData, headers: headers});
     if (response.status === 200) {
         if (response.data && response.data.app_msg_list) {
-            const ret = response.data.app_msg_list.map((item) => {
-                logInfo && console.log(`title: ${item.title}\nurl: ${item.link}`);
-                return {title: item.title, url: item.link};
+            return response.data.app_msg_list.map((item) => {
+                return {date: item.create_time * 1000, title: item.title, url: item.link};
             });
-            return ret;
         } else {
             if (response.data && response.data.base_resp && response.data.base_resp.err_msg) {
-                // Token expired
-                console.log(response.data.base_resp.err_msg);
-                sendNotify('covid_session_expired');
                 throw new Error(response.data.base_resp.err_msg);
             } else {
                 console.log(`No 'app_msg_list' found.`);
             }
-            return null;
         }
     }
 
-    console.log(`error ${response.status}`);
     return null;
 }
 
@@ -563,7 +591,7 @@ async function getRegionStatusList(url) {
     fs.writeFileSync(`${dataFilePath}/region.json`, JSON.stringify(ret), 'utf8');
 }
 
-async function getListPage() {
+async function getListPageFromWsj() {
     const fromDate = new Date('2022-02-26 00:00:00').getTime();
     const result = await getTopicsFromWsjListPages(5);
     const ret = result.filter((item) => {
@@ -661,7 +689,11 @@ function completeUrl(path, baseUrl) {
     return ret;
 }
 
-// TODO: 从卫健委网站每日播报数据的文章链接获取病患地址信息
+/**
+ * 从卫健委网站每日播报数据的文章链接获取病患地址信息
+ * @param url
+ * @returns {Promise<{date: string, addresses: *[]}|boolean>}
+ */
 async function getAddress(url) {
     const dom = await JSDOM.fromURL(url);
     const {window} = dom;
