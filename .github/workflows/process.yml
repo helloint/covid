@@ -8,6 +8,11 @@ on:
     - cron: '*/5 23 * * *'
     - cron: '*/5 0-6 * * *'
   workflow_dispatch:
+    override:
+      description: Override Existing Data
+      type: boolean
+      required: false
+      default: false
   repository_dispatch:
     types:
       - webhook
@@ -29,7 +34,7 @@ jobs:
         run: npm i
 
       - name: Process
-        run: npm start
+        run: OVERRIDE=${{ github.event.inputs.override }} npm start
         env:
           TOKEN: ${{ secrets.TOKEN }}
           COOKIE: ${{ secrets.COOKIE }}

@@ -31,26 +31,26 @@ if (!config.token) {
 
 async function main() {
     var type = process.argv.slice(2)[0];
-    var url = process.argv.slice(2)[1];
+    var arg0 = process.argv.slice(2)[1];
     switch (type) {
         case 'run' :
-            await run();
+            await run(arg0);
             break;
         case 'daily':
             // url = 'https://mp.weixin.qq.com/s/-Mrve9R04c6Q6l9T6aTMqw';
-            await processDailyData(url);
+            await processDailyData(arg0);
             break;
         case 'address':
             // url = 'https://mp.weixin.qq.com/s/zERWgFNJzWTydSmvjRPFLw';
-            processAddressFromWechat(url);
+            processAddressFromWechat(arg0);
             break;
         case 'addressmh':
             // url = 'https://mp.weixin.qq.com/s/t-fxXIdQqb2BLwO3rCoP8A';
-            processAddressFromWechatMh(url);
+            processAddressFromWechatMh(arg0);
             break;
         case '3':
             // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
-            await getRegionStatusList(url);
+            await getRegionStatusList(arg0);
             break;
         case 'list':
             await getListPage();
@@ -94,7 +94,7 @@ function now() {
     return new Date(new Date().getTime() + (480 + new Date().getTimezoneOffset()) * 60 * 1000)
 }
 
-async function run() {
+async function run(override) {
     const yesterday = new Date(now().getTime() - 1000 * 60 * 60 * 24);
     const yesterdayStr = parseDate(yesterday);
     const dailyFeed = `${dataFilePath}/daily.json`;
@@ -102,7 +102,7 @@ async function run() {
     const addressFeed = `${dataFilePath}/address.json`;
     const addressData = JSON.parse(fs.readFileSync(addressFeed, 'utf8'));
 
-    if (dailyData.date === yesterdayStr && addressData.date === yesterdayStr) {
+    if (!override && dailyData.date === yesterdayStr && addressData.date === yesterdayStr) {
         console.log('Today data already generated. Quit!');
         return;
     }
@@ -111,7 +111,7 @@ async function run() {
     if (topics) {
         let topic = null;
         var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
-        if (dailyData.date !== yesterdayStr) {
+        if (override || dailyData.date !== yesterdayStr) {
             topic = topics.find((item) => {
                 const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
                 const res = item.title.match(regex);
@@ -128,7 +128,7 @@ async function run() {
             }
         }
 
-        if (addressData.date !== yesterdayStr) {
+        if (override || addressData.date !== yesterdayStr) {
             topic = topics.find((item) => {
                 // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
                 // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
@@ -423,7 +423,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
             totalResult = content.match(totalRegex);
         }
     });
-    var totalResultData = [0, totalResult[1], totalResult[2], totalResult.length >=4 && totalResult[3] ? totalResult[3] : 0, totalResult.length >=5 && totalResult[4] ? totalResult[4] : 0];
+    var totalResultData = [0, totalResult[1], totalResult[2], totalResult.length >= 4 && totalResult[3] ? totalResult[3] : 0, totalResult.length >= 5 && totalResult[4] ? totalResult[4] : 0];
     // 累计治愈数据修正。4/14之前的数据，包含了历史疫情。
     if (dataDateDisplay < '2022-04-14') {
         totalResultData[1] = totalResultData[1] - 385;
@@ -439,7 +439,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
         summaryResultData[0], summaryResultData[1], summaryResultData[2], summaryResultData[3], summaryResultData[4],
         deathResultData[0],
         totalResultData[2],
-        curedResult[1],totalResultData[1], totalResultData[3], totalResultData[4],
+        curedResult[1], totalResultData[1], totalResultData[3], totalResultData[4],
     ];
     console.log(summaryData.join(','));
     data.daily = {
@@ -522,7 +522,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     data.total = totalNums;
     let dailyTotalSlimData = JSON.parse(JSON.stringify(dailyTotalData));
     delete dailyTotalSlimData.regions;
-    Object.entries(dailyTotalSlimData.daily).forEach(([k,v]) => delete v.url);
+    Object.entries(dailyTotalSlimData.daily).forEach(([k, v]) => delete v.url);
     fs.writeFileSync(dailyTotalFeed, JSON.stringify(dailyTotalData), 'utf8');
     fs.writeFileSync(dailyTotalSlimFeed, JSON.stringify(dailyTotalSlimData), 'utf8');
     fs.writeFileSync(dailyFeed, JSON.stringify(data), 'utf8');

@@ -4,7 +4,8 @@
   "description": "node main.js [url]",
   "main": "main.js",
   "scripts": {
-    "start": "node ./server/main.js run"
+    "start": "node ./server/main.js run $OVERRIDE",
+    "daily": "node ./server/main.js daily $URL"
   },
   "author": "",
   "license": "ISC",
