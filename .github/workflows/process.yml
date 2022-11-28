@@ -8,11 +8,12 @@ on:
     - cron: '*/5 23 * * *'
     - cron: '*/5 0-6 * * *'
   workflow_dispatch:
-    override:
-      description: Override Existing Data
-      type: boolean
-      required: false
-      default: false
+    inputs:
+      override:
+        description: Override Existing Data
+        type: boolean
+        required: false
+        default: false
   repository_dispatch:
     types:
       - webhook
