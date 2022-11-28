@@ -37,7 +37,7 @@ async function main() {
             await run();
             break;
         case 'daily':
-            // url = 'https://mp.weixin.qq.com/s/tC4KmWQ5r8eqfeTav5xAeQ';
+            // url = 'https://mp.weixin.qq.com/s/-Mrve9R04c6Q6l9T6aTMqw';
             await processDailyData(url);
             break;
         case 'address':
@@ -231,6 +231,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例确诊病例在隔离管控中发现。
     新增本土新冠肺炎确诊病例4例和无症状感染者5例，均在隔离管控中发现。
     新增本土新冠肺炎确诊病例11例和无症状感染者119例，其中2例确诊病例和2例无症状感染者在社会面常态化核酸检测中发现，9例确诊病例和117例无症状感染者在隔离管控中发现。
+    新增本土新冠肺炎确诊病例16例和无症状感染者128例，其中3例确诊病例和1例无症状感染者在社会面核酸检测中发现，13例确诊病例和127例无症状感染者在隔离管控中发现。
 
     Template 2:
     新增本土新冠肺炎确诊病例1292（含既往无症状感染者转为确诊病例858例）和无症状感染者9330例，432例确诊病例和9140例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
