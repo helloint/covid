@@ -95,6 +95,7 @@ function now() {
 }
 
 async function run(override) {
+    override = override === 'true'; // original override is string type, 'true': 'false'
     const yesterday = new Date(now().getTime() - 1000 * 60 * 60 * 24);
     const yesterdayStr = parseDate(yesterday);
     const dailyFeed = `${dataFilePath}/daily.json`;
