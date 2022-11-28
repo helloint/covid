@@ -7,14 +7,22 @@
     "start": "node ./server/main.js run $OVERRIDE",
     "daily": "node ./server/main.js daily $URL",
     "listwechat": "node ./server/main.js listwechat 10",
-    "listwsj": "node ./server/main.js listwsj 10"
+    "listwsj": "node ./server/main.js listwsj 100",
+    "listnhc": "node ./server/main.js listnhc 100",
+    "fetch": "node ./server/main.js fetch"
   },
   "author": "",
   "license": "ISC",
+  "engines" : {
+    "node" : ">=14.0.0 <16.0.0"
+  },
   "dependencies": {
     "axios": "^0.27.2",
+    "browserless": "^9.7.0",
     "canvas": "^2.9.1",
     "jquery": "^3.6.0",
-    "jsdom": "^19.0.0"
+    "jsdom": "^19.0.0",
+    "lodash": "^4.17.21",
+    "puppeteer": "^19.3.0"
   }
 }

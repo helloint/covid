@@ -20,6 +20,7 @@ const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 const config = require('./config.js');
 const axios = require("axios");
+const createBrowser = require('browserless');
 const dataFilePath = `${__dirname}/../data`;
 
 if (!config.token) {
@@ -52,10 +53,10 @@ async function main() {
             await getRegionStatusList(arg0);
             break;
         case 'listwsj':
-            await getTopicsFromWsj(arg0);
+            await getTopicsFromWsj(arg0, '2022-01-01 00:00:00');
             break;
         case 'listnhc':
-            await getTopicsFromNhc(arg0);
+            await getTopicsFromNhc(arg0, '2022-01-01 00:00:00');
             break;
         case 'listwechat':
             await getLatestTopicsFromWeChat(arg0, true);
@@ -66,7 +67,11 @@ async function main() {
         case 'addrhistory':
             await processAddressHistory();
             break;
-        // TODO: 获取全国疫情通报数据 http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml
+        case 'fetch':
+            const browser = createBrowser();
+            await fetchProtectedUrl(browser, 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml');
+            await browser.close();
+            break;
         default:
             console.log('No match type.');
     }
@@ -627,57 +632,71 @@ function writeDailyAddressesToFile(date, addresses) {
  * @returns {Promise<*[]>}
  */
 async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00') {
-    const getTopics = async (total) => {
+    const getTopics = async (total, fromDate) => {
         const getPageUrl = (pageNum) => {
             return `https://ss.shanghai.gov.cn/search?page=${pageNum + 1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
         }
 
         /**
-         * 从WSJ topics中过滤出新冠疫情数据播报文章
+         * 过滤出疫情数据文章
          * @param url
-         * @returns {Promise<*[]>}
+         * @returns {Promise<{result: *[], exceeded: boolean}>}
          */
-        const filterMatchedTopics = async (url) => {
+        const filterMatchedTopics = async (url, fromDate) => {
             const dom = await JSDOM.fromURL(url);
             const {window} = dom;
             const ret = [];
             const regex = /上海(\d+)年(\d+)月(\d+)日，无?新增本土新冠肺炎确诊病例/;
 
             const $ = jQuery = require('jquery')(window);
+            let exceeded = false;
             $('#results a.restitle').each((index, item) => {
                 const title = $(item).text().trim();
                 const result = title.match(regex);
                 if (result) {
                     const path = completeUrl($(item).attr('href'), url);
-                    ret.push([[result[1], result[2], result[3]].join('-'), path, title]);
+                    const date = [result[1], result[2], result[3]].join('-');
+                    ret.push([date, path, title]);
+
+                    if (fromDate) {
+                        const itemDate = new Date(date).getTime();
+                        if (itemDate <= fromDate) {
+                            exceeded = true;
+                            return false;
+                        }
+                    }
                 }
             });
 
-            return ret;
+            return {
+                result: ret, exceeded
+            };
         }
 
         const ret = [];
         let pageNum = 0;
-        while (ret.length <= total) {
+        console.log(`total: ${total}`);
+        let dateExceeded = false;
+        while (!dateExceeded && ret.length <= total) {
             let url = getPageUrl(pageNum);
-            const result = await filterMatchedTopics(url);
+            const {result, exceeded} = await filterMatchedTopics(url, fromDate);
             ret.push(...result);
             pageNum++;
+            console.log(`count: ${ret.length}`);
+            if (exceeded) {
+                dateExceeded = true;
+            }
         }
         return ret;
     }
 
     const fromDate = startDate ? new Date(startDate).getTime() : null;
-    const result = await getTopics(total);
-    const ret = fromDate ? result.filter((item) => {
-        const itemDate = new Date(item[0]).getTime();
-        return itemDate >= fromDate;
-    }) : result;
-    ret.forEach((item) => {
+    const result = await getTopics(total, fromDate);
+    result.forEach((item) => {
         console.log(`[${item[0]}]${item[2]} ${item[1]}`);
     });
 
-    return ret;
+    return result;
 }
 
 /**
@@ -686,10 +705,102 @@ async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00') {
  * http://www.nhc.gov.cn/xcs/yqtb/list_gzbd_2.shtml
  *
  * @param total
- * @returns {Promise<void>}
+ * @param startDate
+ * @returns {Promise<*[]>}
  */
-async function getTopicsFromNhc(total = 5) {
+async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00') {
+    const browser = createBrowser();
+    const getTopics = async (total, fromDate) => {
+        const getPageUrl = (pageNum) => {
+            return `http://www.nhc.gov.cn/xcs/yqtb/list_gzbd${pageNum === 0 ? '' : `_${pageNum + 1}`}.shtml`;
+        }
 
+        /**
+         * 过滤出疫情数据文章
+         * @param url
+         * @param fromDate
+         * @returns {Promise<{result: *[], exceeded: boolean}>}
+         */
+        const filterMatchedTopics = async (url, fromDate) => {
+            const html = await fetchProtectedUrl(browser, url);
+            const dom = new JSDOM(html);
+            const {window} = dom;
+            const ret = [];
+            const regex = /截至(\d+)月(\d+)日24时新型冠状病毒肺炎疫情最新情况/;
+            const dateRegex = /(\d+)-(\d+)-(\d+)/;
+
+            const $ = jQuery = require('jquery')(window);
+            let exceeded = false;
+            $('ul.zxxx_list li').each((index, item) => {
+                const title = $(item).find('a').text().trim();
+                const date = $(item).find('span.ml').text().trim();
+                const match = title.match(regex);
+                const result = date.match(dateRegex);
+                if (match && result) {
+                    const path = completeUrl($(item).find('a').attr('href'), url);
+                    // 跨年的时候，result[1]对应的年份会出现1天的偏差，需手动修正。
+                    ret.push([[result[1], match[1], match[2]].join('-'), path, title]);
+
+                    if (fromDate) {
+                        const itemDate = new Date(date).getTime();
+                        if (itemDate <= fromDate) {
+                            exceeded = true;
+                            return false;
+                        }
+                    }
+                }
+            });
+
+            return {
+                result: ret, exceeded
+            };
+        }
+
+        const ret = [];
+        let pageNum = 0;
+        console.log(`total: ${total}`);
+        let dateExceeded = false;
+        while (!dateExceeded && ret.length <= total) {
+            let url = getPageUrl(pageNum);
+            const {result, exceeded} = await filterMatchedTopics(url, fromDate);
+            ret.push(...result);
+            pageNum++;
+            console.log(`count: ${ret.length}`);
+            if (exceeded) {
+                dateExceeded = true;
+            }
+        }
+        return ret;
+    }
+
+    const fromDate = startDate ? new Date(startDate).getTime() : null;
+    const result = await getTopics(total, fromDate);
+    result.forEach((item) => {
+        console.log(`[${item[0]}]${item[2]} ${item[1]}`);
+    });
+
+    await browser.close();
+    return result;
+}
+
+async function fetchProtectedUrl(browser, url) {
+    const browserless = await browser.createContext({
+        // waitForTimeout: 3000
+    });
+    const html = await browserless.html(url, {
+        // waitForTimeout: 3000
+    });
+    // console.log(html);
+    // const dom = new JSDOM(html);
+    // const {window} = dom;
+    // const $ = jQuery = require('jquery')(window);
+    // const title = $('title').text();
+    // console.log(title);
+
+    // After your task is done, destroy your browser context
+    await browserless.destroyContext();
+    // await browser.close();
+    return html;
 }
 
 /**
