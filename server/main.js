@@ -52,7 +52,10 @@ async function main() {
             await getRegionStatusList(arg0);
             break;
         case 'listwsj':
-            await getListPageFromWsj();
+            await getTopicsFromWsj(arg0);
+            break;
+        case 'listnhc':
+            await getTopicsFromNhc(arg0);
             break;
         case 'listwechat':
             await getLatestTopicsFromWeChat(arg0, true);
@@ -591,21 +594,6 @@ async function getRegionStatusList(url) {
     fs.writeFileSync(`${dataFilePath}/region.json`, JSON.stringify(ret), 'utf8');
 }
 
-async function getListPageFromWsj() {
-    const fromDate = new Date('2022-02-26 00:00:00').getTime();
-    const result = await getTopicsFromWsjListPages(5);
-    const ret = result.filter((item) => {
-        const itemDate = new Date(item[0]).getTime();
-        return itemDate >= fromDate;
-    });
-    ret.sort((a, b) => new Date(a[0]).getTime() > new Date(b[0]).getTime());
-    ret.forEach((item) => {
-        // console.log(`date: ${item[0]}`);
-        console.log(`title: ${item[2]}`);
-        console.log(`url: ${item[1]}`);
-    });
-}
-
 async function processAddressFromWechat(url) {
     const {date, addresses} = await getAddressFromWechat(url);
     if (addresses) {
@@ -632,45 +620,76 @@ function writeDailyAddressesToFile(date, addresses) {
     }
 }
 
-/*
-从卫健委网站获取每日播报数据的文章链接
+/**
+ * 从上海市卫健委网站获取每日播报数据的文章链接
+ * @param total
+ * @param startDate
+ * @returns {Promise<*[]>}
  */
-async function getTopicsFromWsjListPages(maxPageNum) {
-    const getPageUrl = (pageNum) => {
-        // if (pageNum === 0) return 'https://wsjkw.sh.gov.cn/xwfb/index.html';
-        // else return `https://wsjkw.sh.gov.cn/xwfb/index_${pageNum+1}.html`;
-        // 官网列表页，从第10页开始数据丢失，只能改用搜索页的数据
-        return `https://ss.shanghai.gov.cn/search?page=${pageNum + 1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
-    }
-    const ret = [];
-    let i = 0;
-    while (i <= maxPageNum) {
-        let url = getPageUrl(i);
-        const result = await getWsjMatchedLinksFromUrl(url);
-        ret.push(...result);
-        i++;
-    }
-    return ret;
-}
-
-async function getWsjMatchedLinksFromUrl(url) {
-    const dom = await JSDOM.fromURL(url);
-    const {window} = dom;
-    const ret = [];
-    const regex = /上海(\d+)年(\d+)月(\d+)日，无?新增本土新冠肺炎确诊病例/;
-
-    const $ = jQuery = require('jquery')(window);
-    // $('#main .main-container .container ul a').each((index, item) => {
-    $('#results a.restitle').each((index, item) => {
-        const title = $(item).text().trim();
-        const result = title.match(regex);
-        if (result) {
-            const path = completeUrl($(item).attr('href'), url);
-            ret.push([[result[1], result[2], result[3]].join('-'), path, title]);
+async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00') {
+    const getTopics = async (total) => {
+        const getPageUrl = (pageNum) => {
+            return `https://ss.shanghai.gov.cn/search?page=${pageNum + 1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
         }
+
+        /**
+         * 从WSJ topics中过滤出新冠疫情数据播报文章
+         * @param url
+         * @returns {Promise<*[]>}
+         */
+        const filterMatchedTopics = async (url) => {
+            const dom = await JSDOM.fromURL(url);
+            const {window} = dom;
+            const ret = [];
+            const regex = /上海(\d+)年(\d+)月(\d+)日，无?新增本土新冠肺炎确诊病例/;
+
+            const $ = jQuery = require('jquery')(window);
+            $('#results a.restitle').each((index, item) => {
+                const title = $(item).text().trim();
+                const result = title.match(regex);
+                if (result) {
+                    const path = completeUrl($(item).attr('href'), url);
+                    ret.push([[result[1], result[2], result[3]].join('-'), path, title]);
+                }
+            });
+
+            return ret;
+        }
+
+        const ret = [];
+        let pageNum = 0;
+        while (ret.length <= total) {
+            let url = getPageUrl(pageNum);
+            const result = await filterMatchedTopics(url);
+            ret.push(...result);
+            pageNum++;
+        }
+        return ret;
+    }
+
+    const fromDate = startDate ? new Date(startDate).getTime() : null;
+    const result = await getTopics(total);
+    const ret = fromDate ? result.filter((item) => {
+        const itemDate = new Date(item[0]).getTime();
+        return itemDate >= fromDate;
+    }) : result;
+    ret.forEach((item) => {
+        console.log(`[${item[0]}]${item[2]} ${item[1]}`);
     });
 
     return ret;
+}
+
+/**
+ * 从国家卫生健康委员会网站获取疫情数据文章列表
+ * http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml
+ * http://www.nhc.gov.cn/xcs/yqtb/list_gzbd_2.shtml
+ *
+ * @param total
+ * @returns {Promise<void>}
+ */
+async function getTopicsFromNhc(total = 5) {
+
 }
 
 /**

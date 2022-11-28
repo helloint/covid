@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node ./server/main.js run $OVERRIDE",
     "daily": "node ./server/main.js daily $URL",
-    "list": "node ./server/main.js listwechat $COUNT"
+    "listwechat": "node ./server/main.js listwechat 10",
+    "listwsj": "node ./server/main.js listwsj 10"
   },
   "author": "",
   "license": "ISC",
