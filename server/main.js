@@ -62,10 +62,14 @@ async function main() {
             await getLatestTopicsFromWeChat(arg0, true);
             break;
         case 'history':
-            await processHistory();
+            // await processHistory();
+            processNhcData();
             break;
         case 'addrhistory':
             await processAddressHistory();
+            break;
+        case 'nhchistory':
+            await processNhcHistory();
             break;
         case 'fetch':
             const browser = createBrowser();
@@ -790,6 +794,7 @@ async function fetchProtectedUrl(browser, url) {
     const html = await browserless.html(url, {
         // waitForTimeout: 3000
     });
+    // FIXME: html sometimes will be empty, not sure if it is because of the timeout.
     // console.log(html);
     // const dom = new JSDOM(html);
     // const {window} = dom;
@@ -801,6 +806,103 @@ async function fetchProtectedUrl(browser, url) {
     await browserless.destroyContext();
     // await browser.close();
     return html;
+}
+
+async function processNhcHistory() {
+    const browser = createBrowser();
+    const feed = `${dataFilePath}/nhcTotal.json`;
+    const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
+    const empties = [];
+    const newData = {};
+    for (const [date, url] of config.nhclinks) {
+        // 只处理未处理过的日期
+        if (!totalData[date]) {
+            const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
+            if (result) {
+                newData[date] = result;
+                console.log(date, result);
+            } else {
+                empties.push(date);
+            }
+        } else {
+            newData[date] = totalData[date];
+        }
+    }
+    console.log(`empties: ${empties}`);
+    fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
+    await browser.close();
+}
+
+function extractNhcSummary(html) {
+    const dom = new JSDOM(html);
+    const {window} = dom;
+    const $ = jQuery = require('jquery')(window);
+    return $('#xw_box').text();
+}
+
+function processNhcData(summary) {
+    if (!summary) {
+        return null;
+    }
+    var regions = [['北京', 'bj'], ['天津', 'tj'], ['河北', 'heb'], ['山西', 'sx'], ['内蒙古', 'nm'], ['辽宁', 'ln'], ['吉林', 'jl'], ['黑龙江', 'hlj'], ['上海', 'sh'], ['江苏', 'js'], ['浙江', 'zj'], ['安徽', 'ah'], ['福建', 'fj'], ['江西', 'jx'], ['山东', 'sd'], ['河南', 'hen'], ['湖北', 'hub'], ['湖南', 'hun'], ['广东', 'gd'], ['广西', 'gx'], ['海南', 'hn'], ['重庆', 'cq'], ['四川', 'sc'], ['贵州', 'gz'], ['云南', 'yn'], ['西藏', 'xz'], ['陕西', 'sax'], ['甘肃', 'gs'], ['青海', 'qh'], ['宁夏', 'nx'], ['新疆', 'xj'], ['兵团', 'bt'],];
+    var confirmSummary = null;
+    var wzzSummary = null;
+    // 确诊
+    var confirmPattern = [
+        '31个省（自治区、直辖市）和新疆生产建设兵团报告新增确诊病例(?<totalconfirm>\\d+)例\\*?。',
+        '其中境外输入病例(?<totalconfirmoutside>\\d+)例\\*?（',
+        '(?<regionsoutside>(?:[\u4e00-\u9fa5\\（\\）]+\\d+例\\*?[、，]?)*)）',
+        '(?:，含\\d+例由无症状感染者转为确诊病例\\*?（)?',
+        // （均在XX），（在XX）
+        '(?:(?:[\u4e00-\u9fa5\\（\\）]+\\d+例\\*?[、，]?)*)?',
+        '(?:均?在[\u4e00-\u9fa5\\（\\）]+)?',
+        '(?:）)?；',
+        '本土病例(?<totalconfirminside>\\d+)例\\*?（',
+        '(?<regionsinside>(?:[\u4e00-\u9fa5\\（\\）]+(?:\\d+例)?\\*?[、，；]?)*)）'
+    ];
+    var confirmRegex = new RegExp(confirmPattern.join(''));
+    var confirmResult = summary.match(confirmRegex);
+    if (confirmResult) {
+        confirmSummary = confirmResult.groups.regionsinside;
+        console.log('确诊: ' + confirmSummary);
+    } else {
+        console.log(confirmResult);
+    }
+
+    var wzzPattern = [
+        '31个省（自治区、直辖市）和新疆生产建设兵团报告新增无症状感染者(?<totalwzz>\\d+)例\\*?，',
+        '其中境外输入(?<totalwzzoutside>\\d+)例\\*?，',
+        '本土(?<totalwzzinside>\\d+)例\\*?（',
+        '(?<regionsinside>(?:[\u4e00-\u9fa5\\（\\）]+(?:\\d+例)?\\*?[、，；]?)*)）',
+    ];
+    // 均为境外输入
+    var wzzRegex = new RegExp(wzzPattern.join(''));
+    var wzzResult = summary.match(wzzRegex);
+    if (wzzResult) {
+        wzzSummary = wzzResult.groups.regionsinside;
+        console.log('无症状: ' + wzzSummary);
+    } else {
+        var wzzRegex2 = new RegExp('31个省（自治区、直辖市）和新疆生产建设兵团报告新增无症状感染者(?<totalwzz>\\d+)例（均为境外输入）');
+        if (wzzRegex2) {
+            wzzSummary = '均为境外输入';
+            console.log('无症状: ' + wzzSummary);
+        } else {
+            console.log(wzzResult);
+        }
+    }
+
+    if (confirmSummary && wzzSummary) {
+        const regionData = {};
+        regions.forEach(region => {
+            const regionConfirmResult = confirmSummary.match(`${region[0]}(\\d+)例`);
+            const regionWzzResult = wzzSummary.match(`${region[0]}(\\d+)例`);
+            regionData[region[1]] = [regionConfirmResult ? parseInt(regionConfirmResult[1]) : 0, regionWzzResult ? parseInt(regionWzzResult[1]) : 0];
+        });
+        // console.log(regionData);
+        return regionData;
+    } else {
+        return null;
+    }
 }
 
 /**

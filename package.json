@@ -9,6 +9,7 @@
     "listwechat": "node ./server/main.js listwechat 10",
     "listwsj": "node ./server/main.js listwsj 100",
     "listnhc": "node ./server/main.js listnhc 100",
+    "nhchistory": "node ./server/main.js nhchistory",
     "fetch": "node ./server/main.js fetch"
   },
   "author": "",
