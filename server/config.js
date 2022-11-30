@@ -126,6 +126,7 @@ config.addressLinks = [
     'https://mp.weixin.qq.com/s/86Ly4-B8zpVAtay0syJuwg',
 ];
 config.nhclinks = [
+    ['2022-11-29','http://www.nhc.gov.cn/xcs/yqtb/202211/d49ff343617a4727a88fc24021f4113e.shtml'],
     ['2022-11-28','http://www.nhc.gov.cn/xcs/yqtb/202211/9e6091b99f0042cd8735237db530c5e1.shtml'],
     ['2022-11-27','http://www.nhc.gov.cn/xcs/yqtb/202211/a6ad14ad49c74489b86b5a19ecff2a15.shtml'],
     ['2022-11-26','http://www.nhc.gov.cn/xcs/yqtb/202211/0179eef79b444927b74e999752665848.shtml'],
@@ -458,6 +459,7 @@ config.nhclinks = [
     ['2022-01-03','http://www.nhc.gov.cn/xcs/yqtb/202201/781709be5eb94fa089f940ebf1b0590e.shtml'],
     ['2022-01-02','http://www.nhc.gov.cn/xcs/yqtb/202201/eb3f2f61f17344749a5db92ea59171f2.shtml'],
     ['2022-01-01','http://www.nhc.gov.cn/xcs/yqtb/202201/a9e94cdd73514d659b8ce8face60705e.shtml'],
+    ['2021-12-31','http://www.nhc.gov.cn/xcs/yqtb/202201/64fae96558284e548f31f67bb541b8f2.shtml'],
 ]
 
 module.exports = config;

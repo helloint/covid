@@ -842,6 +842,7 @@ function extractNhcSummary(html) {
 
 function processNhcData(summary) {
     if (!summary) {
+        console.log('summary is empty');
         return null;
     }
     var regions = [['北京', 'bj'], ['天津', 'tj'], ['河北', 'heb'], ['山西', 'sx'], ['内蒙古', 'nm'], ['辽宁', 'ln'], ['吉林', 'jl'], ['黑龙江', 'hlj'], ['上海', 'sh'], ['江苏', 'js'], ['浙江', 'zj'], ['安徽', 'ah'], ['福建', 'fj'], ['江西', 'jx'], ['山东', 'sd'], ['河南', 'hen'], ['湖北', 'hub'], ['湖南', 'hun'], ['广东', 'gd'], ['广西', 'gx'], ['海南', 'hn'], ['重庆', 'cq'], ['四川', 'sc'], ['贵州', 'gz'], ['云南', 'yn'], ['西藏', 'xz'], ['陕西', 'sax'], ['甘肃', 'gs'], ['青海', 'qh'], ['宁夏', 'nx'], ['新疆', 'xj'], ['兵团', 'bt'],];
