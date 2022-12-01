@@ -20,6 +20,7 @@ const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 const config = require('./config.js');
 const axios = require("axios");
+const createBrowser = require('browserless');
 const dataFilePath = `${__dirname}/../data`;
 
 if (!config.token) {
@@ -52,18 +53,29 @@ async function main() {
             await getRegionStatusList(arg0);
             break;
         case 'listwsj':
-            await getListPageFromWsj();
+            await getTopicsFromWsj(arg0, '2022-01-01 00:00:00', true);
+            break;
+        case 'listnhc':
+            await getTopicsFromNhc(arg0, '2022-01-01 00:00:00', true);
             break;
         case 'listwechat':
             await getLatestTopicsFromWeChat(arg0, true);
             break;
         case 'history':
-            await processHistory();
+            // await processHistory();
+            processNhcData();
             break;
         case 'addrhistory':
             await processAddressHistory();
             break;
-        // TODO: 获取全国疫情通报数据 http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml
+        case 'nhchistory':
+            await processNhcHistory();
+            break;
+        case 'fetch':
+            const browser = createBrowser();
+            await fetchProtectedUrl(browser, 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml');
+            await browser.close();
+            break;
         default:
             console.log('No match type.');
     }
@@ -108,47 +120,66 @@ async function run(override) {
         return;
     }
 
-    var topics = await getLatestTopicsFromWeChat();
-    if (topics) {
-        let topic = null;
-        var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
-        if (override || dailyData.date !== yesterdayStr) {
-            topic = topics.find((item) => {
-                const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
-                const res = item.title.match(regex);
-                if (res) {
-                    return true;
+    console.log('Processing wechat data...');
+    if (config.token) {
+        var topics = await getLatestTopicsFromWeChat();
+        if (topics) {
+            let topic = null;
+            var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
+            if (override || dailyData.date !== yesterdayStr) {
+                topic = topics.find((item) => {
+                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
+                    const res = item.title.match(regex);
+                    if (res) {
+                        return true;
+                    }
+                });
+                if (topic) {
+                    await processDailyData(topic.url);
+                    console.log('Wechat data done.');
+                    sendNotify('covid_daily_done');
+                } else {
+                    console.log('Wechat topic not ready.');
                 }
-            });
-            if (topic) {
-                console.log('processing daily data...');
-                await processDailyData(topic.url);
-                sendNotify('covid_daily_done');
-            } else {
-                console.log('Daily topic not ready.');
             }
-        }
 
-        if (override || addressData.date !== yesterdayStr) {
-            topic = topics.find((item) => {
-                // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
-                // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
-                const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
-                const res = item.title.match(regex);
-                if (res) {
-                    return true;
+            if (override || addressData.date !== yesterdayStr) {
+                topic = topics.find((item) => {
+                    // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
+                    // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
+                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
+                    const res = item.title.match(regex);
+                    if (res) {
+                        return true;
+                    }
+                });
+                if (topic) {
+                    console.log('processing address data...');
+                    await processAddressFromWechat(topic.url);
+                    sendNotify('covid_address_done');
+                } else {
+                    console.log('Address topic not ready.');
                 }
-            });
-            if (topic) {
-                console.log('processing address data...');
-                await processAddressFromWechat(topic.url);
-                sendNotify('covid_address_done');
-            } else {
-                console.log('Address topic not ready.');
             }
+        } else {
+            console.log('No wechat topics.');
         }
     } else {
-        console.log('No Topics.');
+        console.log('Wechat token not set, skipped.');
+    }
+
+    // nhc
+    console.log('Processing nhc data...');
+    var nhcTopics = await getTopicsFromNhc(1);
+    if (nhcTopics && nhcTopics.length > 0) {
+        if (nhcTopics[0][0] === yesterdayStr) {
+            await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
+            console.log('Nhc data done.');
+        } else {
+            console.log('Nhc topic not ready.');
+        }
+    } else {
+        console.log('No nhc Topics.');
     }
 }
 
@@ -179,7 +210,7 @@ async function getLatestTopicsFromWeChat(total = 5, enableLog) {
                 break;
             }
         } catch (e) {
-            console.log(response.data.base_resp.err_msg);
+            console.log(e);
             !enableLog && sendNotify('covid_session_expired');
             break;
         }
@@ -227,9 +258,13 @@ async function getLatestTopicsFromWeChatByPage(pageNum) {
 }
 
 function sendNotify(errCode) {
-    const webHookUrl = `https://maker.ifttt.com/trigger/${errCode}/json/with/key/${config.key}`;
-    console.log(`webHookUrl: ${webHookUrl}`);
-    axios.get(webHookUrl);
+    if (config.key) {
+        const webHookUrl = `https://maker.ifttt.com/trigger/${errCode}/json/with/key/${config.key}`;
+        axios.get(webHookUrl);
+        console.log(`webHookUrl: ${webHookUrl}`);
+    } else {
+        console.log('no webHook key, skipped');
+    }
 }
 
 async function processDailyData(url, showRegions = true, reset = false) {
@@ -591,21 +626,6 @@ async function getRegionStatusList(url) {
     fs.writeFileSync(`${dataFilePath}/region.json`, JSON.stringify(ret), 'utf8');
 }
 
-async function getListPageFromWsj() {
-    const fromDate = new Date('2022-02-26 00:00:00').getTime();
-    const result = await getTopicsFromWsjListPages(5);
-    const ret = result.filter((item) => {
-        const itemDate = new Date(item[0]).getTime();
-        return itemDate >= fromDate;
-    });
-    ret.sort((a, b) => new Date(a[0]).getTime() > new Date(b[0]).getTime());
-    ret.forEach((item) => {
-        // console.log(`date: ${item[0]}`);
-        console.log(`title: ${item[2]}`);
-        console.log(`url: ${item[1]}`);
-    });
-}
-
 async function processAddressFromWechat(url) {
     const {date, addresses} = await getAddressFromWechat(url);
     if (addresses) {
@@ -632,45 +652,302 @@ function writeDailyAddressesToFile(date, addresses) {
     }
 }
 
-/*
-从卫健委网站获取每日播报数据的文章链接
+/**
+ * 从上海市卫健委网站获取每日播报数据的文章链接
+ * @param total
+ * @param startDate
+ * @param enableLog
+ * @returns {Promise<*[]>}
  */
-async function getTopicsFromWsjListPages(maxPageNum) {
-    const getPageUrl = (pageNum) => {
-        // if (pageNum === 0) return 'https://wsjkw.sh.gov.cn/xwfb/index.html';
-        // else return `https://wsjkw.sh.gov.cn/xwfb/index_${pageNum+1}.html`;
-        // 官网列表页，从第10页开始数据丢失，只能改用搜索页的数据
-        return `https://ss.shanghai.gov.cn/search?page=${pageNum + 1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
-    }
-    const ret = [];
-    let i = 0;
-    while (i <= maxPageNum) {
-        let url = getPageUrl(i);
-        const result = await getWsjMatchedLinksFromUrl(url);
-        ret.push(...result);
-        i++;
-    }
-    return ret;
-}
-
-async function getWsjMatchedLinksFromUrl(url) {
-    const dom = await JSDOM.fromURL(url);
-    const {window} = dom;
-    const ret = [];
-    const regex = /上海(\d+)年(\d+)月(\d+)日，无?新增本土新冠肺炎确诊病例/;
-
-    const $ = jQuery = require('jquery')(window);
-    // $('#main .main-container .container ul a').each((index, item) => {
-    $('#results a.restitle').each((index, item) => {
-        const title = $(item).text().trim();
-        const result = title.match(regex);
-        if (result) {
-            const path = completeUrl($(item).attr('href'), url);
-            ret.push([[result[1], result[2], result[3]].join('-'), path, title]);
+async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00', enableLog = false) {
+    const getTopics = async (total, fromDate) => {
+        const getPageUrl = (pageNum) => {
+            return `https://ss.shanghai.gov.cn/search?page=${pageNum + 1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
         }
+
+        /**
+         * 过滤出疫情数据文章
+         * @param url
+         * @returns {Promise<{result: *[], exceeded: boolean}>}
+         */
+        const filterMatchedTopics = async (url, fromDate) => {
+            const dom = await JSDOM.fromURL(url);
+            const {window} = dom;
+            const ret = [];
+            const regex = /上海(\d+)年(\d+)月(\d+)日，无?新增本土新冠肺炎确诊病例/;
+
+            const $ = jQuery = require('jquery')(window);
+            let exceeded = false;
+            $('#results a.restitle').each((index, item) => {
+                const title = $(item).text().trim();
+                const result = title.match(regex);
+                if (result) {
+                    const path = completeUrl($(item).attr('href'), url);
+                    const date = [result[1], result[2], result[3]].join('-');
+                    ret.push([date, path, title]);
+
+                    if (fromDate) {
+                        const itemDate = new Date(date).getTime();
+                        if (itemDate <= fromDate) {
+                            exceeded = true;
+                            return false;
+                        }
+                    }
+                }
+            });
+
+            return {
+                result: ret, exceeded
+            };
+        }
+
+        const ret = [];
+        let pageNum = 0;
+        enableLog && console.log(`total: ${total}`);
+        let dateExceeded = false;
+        while (!dateExceeded && ret.length <= total) {
+            let url = getPageUrl(pageNum);
+            const {result, exceeded} = await filterMatchedTopics(url, fromDate);
+            ret.push(...result);
+            pageNum++;
+            enableLog && console.log(`count: ${ret.length}`);
+            if (exceeded) {
+                dateExceeded = true;
+            }
+        }
+        return ret;
+    }
+
+    const fromDate = startDate ? new Date(startDate).getTime() : null;
+    const result = await getTopics(total, fromDate);
+    enableLog && result.forEach((item) => {
+        console.log(`[${item[0]}]${item[2]} ${item[1]}`);
     });
 
-    return ret;
+    return result;
+}
+
+/**
+ * 从国家卫生健康委员会网站获取疫情数据文章列表
+ * http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml
+ * http://www.nhc.gov.cn/xcs/yqtb/list_gzbd_2.shtml
+ *
+ * @param total
+ * @param startDate
+ * @param enableLog
+ * @returns {Promise<*[]>}
+ */
+async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', enableLog = false) {
+    const browser = createBrowser();
+    const getTopics = async (total, fromDate) => {
+        const getPageUrl = (pageNum) => {
+            return `http://www.nhc.gov.cn/xcs/yqtb/list_gzbd${pageNum === 0 ? '' : `_${pageNum + 1}`}.shtml`;
+        }
+
+        /**
+         * 过滤出疫情数据文章
+         * @param url
+         * @param fromDate
+         * @returns {Promise<{result: *[], exceeded: boolean}>}
+         */
+        const filterMatchedTopics = async (url, fromDate) => {
+            const html = await fetchProtectedUrl(browser, url);
+            const dom = new JSDOM(html);
+            const {window} = dom;
+            const ret = [];
+            const regex = /截至(\d+)月(\d+)日24时新型冠状病毒肺炎疫情最新情况/;
+            const dateRegex = /(\d+)-(\d+)-(\d+)/;
+
+            const $ = jQuery = require('jquery')(window);
+            let exceeded = false;
+            $('ul.zxxx_list li').each((index, item) => {
+                const title = $(item).find('a').text().trim();
+                const date = $(item).find('span.ml').text().trim();
+                const match = title.match(regex);
+                const result = date.match(dateRegex);
+                if (match && result) {
+                    const path = completeUrl($(item).find('a').attr('href'), url);
+                    // 跨年的时候，result[1]对应的年份会出现1天的偏差，需手动修正。
+                    ret.push([[result[1], match[1], match[2]].join('-'), path, title]);
+
+                    if (fromDate) {
+                        const itemDate = new Date(date).getTime();
+                        if (itemDate <= fromDate) {
+                            exceeded = true;
+                            return false;
+                        }
+                    }
+                }
+            });
+
+            return {
+                result: ret, exceeded
+            };
+        }
+
+        const ret = [];
+        let pageNum = 0;
+        enableLog && console.log(`total: ${total}`);
+        let dateExceeded = false;
+        while (!dateExceeded && ret.length <= total) {
+            let url = getPageUrl(pageNum);
+            const {result, exceeded} = await filterMatchedTopics(url, fromDate);
+            ret.push(...result);
+            pageNum++;
+            enableLog && console.log(`count: ${ret.length}`);
+            if (exceeded) {
+                dateExceeded = true;
+            }
+        }
+        return ret;
+    }
+
+    const fromDate = startDate ? new Date(startDate).getTime() : null;
+    const result = await getTopics(total, fromDate);
+    enableLog && result.forEach((item) => {
+         console.log(`[${item[0]}]${item[2]} ${item[1]}`);
+    });
+
+    await browser.close();
+    return result;
+}
+
+async function fetchProtectedUrl(browser, url) {
+    const browserless = await browser.createContext({
+        // waitForTimeout: 3000
+    });
+    const html = await browserless.html(url, {
+        // waitForTimeout: 3000
+    });
+    // FIXME: html sometimes will be empty, not sure if it is because of the timeout.
+    // console.log(html);
+    // const dom = new JSDOM(html);
+    // const {window} = dom;
+    // const $ = jQuery = require('jquery')(window);
+    // const title = $('title').text();
+    // console.log(title);
+
+    // After your task is done, destroy your browser context
+    await browserless.destroyContext();
+    // await browser.close();
+    return html;
+}
+
+async function processNhcDaily(date, url) {
+    const feed = `${dataFilePath}/nhcTotal.json`;
+    const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
+    const browser = createBrowser();
+    const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
+    await browser.close();
+    if (result) {
+        const newData = {};
+        newData[date] = result;
+        console.log(date, result);
+        Object.keys(totalData).forEach(date => {
+            newData[date] = totalData[date];
+        });
+        fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
+    } else {
+        console.log(`process failed, result: ${result}`);
+    }
+}
+
+async function processNhcHistory() {
+    const browser = createBrowser();
+    const feed = `${dataFilePath}/nhcTotal.json`;
+    const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
+    const empties = [];
+    const newData = {};
+    for (const [date, url] of config.nhclinks) {
+        // 只处理未处理过的日期
+        if (!totalData[date]) {
+            const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
+            if (result) {
+                newData[date] = result;
+                console.log(date, result);
+            } else {
+                empties.push(date);
+            }
+        } else {
+            newData[date] = totalData[date];
+        }
+    }
+    console.log(`empties: ${empties}`);
+    fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
+    await browser.close();
+}
+
+function extractNhcSummary(html) {
+    const dom = new JSDOM(html);
+    const {window} = dom;
+    const $ = jQuery = require('jquery')(window);
+    return $('#xw_box').text();
+}
+
+function processNhcData(summary) {
+    if (!summary) {
+        console.log('summary is empty');
+        return null;
+    }
+    var regions = [['北京', 'bj'], ['天津', 'tj'], ['河北', 'heb'], ['山西', 'sx'], ['内蒙古', 'nm'], ['辽宁', 'ln'], ['吉林', 'jl'], ['黑龙江', 'hlj'], ['上海', 'sh'], ['江苏', 'js'], ['浙江', 'zj'], ['安徽', 'ah'], ['福建', 'fj'], ['江西', 'jx'], ['山东', 'sd'], ['河南', 'hen'], ['湖北', 'hub'], ['湖南', 'hun'], ['广东', 'gd'], ['广西', 'gx'], ['海南', 'hn'], ['重庆', 'cq'], ['四川', 'sc'], ['贵州', 'gz'], ['云南', 'yn'], ['西藏', 'xz'], ['陕西', 'sax'], ['甘肃', 'gs'], ['青海', 'qh'], ['宁夏', 'nx'], ['新疆', 'xj'], ['兵团', 'bt'],];
+    var confirmSummary = null;
+    var wzzSummary = null;
+    // 确诊
+    var confirmPattern = [
+        '31个省（自治区、直辖市）和新疆生产建设兵团报告新增确诊病例(?<totalconfirm>\\d+)例\\*?。',
+        '其中境外输入病例(?<totalconfirmoutside>\\d+)例\\*?（',
+        '(?<regionsoutside>(?:[\u4e00-\u9fa5\\（\\）]+\\d+例\\*?[、，]?)*)）',
+        '(?:，含\\d+例由无症状感染者转为确诊病例\\*?（)?',
+        // （均在XX），（在XX）
+        '(?:(?:[\u4e00-\u9fa5\\（\\）]+\\d+例\\*?[、，]?)*)?',
+        '(?:均?在[\u4e00-\u9fa5\\（\\）]+)?',
+        '(?:）)?；',
+        '本土病例(?<totalconfirminside>\\d+)例\\*?（',
+        '(?<regionsinside>(?:[\u4e00-\u9fa5\\（\\）]+(?:\\d+例)?\\*?[、，；]?)*)）'
+    ];
+    var confirmRegex = new RegExp(confirmPattern.join(''));
+    var confirmResult = summary.match(confirmRegex);
+    if (confirmResult) {
+        confirmSummary = confirmResult.groups.regionsinside;
+        console.log('确诊: ' + confirmSummary);
+    } else {
+        console.log(confirmResult);
+    }
+
+    var wzzPattern = [
+        '31个省（自治区、直辖市）和新疆生产建设兵团报告新增无症状感染者(?<totalwzz>\\d+)例\\*?，',
+        '其中境外输入(?<totalwzzoutside>\\d+)例\\*?，',
+        '本土(?<totalwzzinside>\\d+)例\\*?（',
+        '(?<regionsinside>(?:[\u4e00-\u9fa5\\（\\）]+(?:\\d+例)?\\*?[、，；]?)*)）',
+    ];
+    // 均为境外输入
+    var wzzRegex = new RegExp(wzzPattern.join(''));
+    var wzzResult = summary.match(wzzRegex);
+    if (wzzResult) {
+        wzzSummary = wzzResult.groups.regionsinside;
+        console.log('无症状: ' + wzzSummary);
+    } else {
+        var wzzRegex2 = new RegExp('31个省（自治区、直辖市）和新疆生产建设兵团报告新增无症状感染者(?<totalwzz>\\d+)例（均为境外输入）');
+        if (wzzRegex2) {
+            wzzSummary = '均为境外输入';
+            console.log('无症状: ' + wzzSummary);
+        } else {
+            console.log(wzzResult);
+        }
+    }
+
+    if (confirmSummary && wzzSummary) {
+        const regionData = {};
+        regions.forEach(region => {
+            const regionConfirmResult = confirmSummary.match(`${region[0]}(\\d+)例`);
+            const regionWzzResult = wzzSummary.match(`${region[0]}(\\d+)例`);
+            regionData[region[1]] = [regionConfirmResult ? parseInt(regionConfirmResult[1]) : 0, regionWzzResult ? parseInt(regionWzzResult[1]) : 0];
+        });
+        // console.log(regionData);
+        return regionData;
+    } else {
+        return null;
+    }
 }
 
 /**
@@ -879,6 +1156,11 @@ function parseAddress(content) {
     return ret;
 }
 
+/**
+ * format date
+ * @param date
+ * @returns {string}  yyyy-MM-dd
+ */
 function parseDate(date) {
     var yyyy = date.getFullYear();
     var mm = date.getMonth() + 1;
