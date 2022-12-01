@@ -173,8 +173,10 @@ async function run(override) {
     var nhcTopics = await getTopicsFromNhc(1);
     if (nhcTopics && nhcTopics.length > 0) {
         if (nhcTopics[0][0] === yesterdayStr) {
-            await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
-            console.log('Nhc data done.');
+            const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
+            if (result) {
+                console.log('Nhc data done.');
+            }
         } else {
             console.log('Nhc topic not ready.');
         }
@@ -760,6 +762,7 @@ async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', en
 
             const $ = jQuery = require('jquery')(window);
             let exceeded = false;
+            console.log('Nhc Topic length:' + $('ul.zxxx_list li').length);
             $('ul.zxxx_list li').each((index, item) => {
                 const title = $(item).find('a').text().trim();
                 const date = $(item).find('span.ml').text().trim();
@@ -805,7 +808,7 @@ async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', en
     const fromDate = startDate ? new Date(startDate).getTime() : null;
     const result = await getTopics(total, fromDate);
     enableLog && result.forEach((item) => {
-         console.log(`[${item[0]}]${item[2]} ${item[1]}`);
+        console.log(`[${item[0]}]${item[2]} ${item[1]}`);
     });
 
     await browser.close();
@@ -819,14 +822,10 @@ async function fetchProtectedUrl(browser, url) {
     const html = await browserless.html(url, {
         // waitForTimeout: 3000
     });
-    // FIXME: html sometimes will be empty, not sure if it is because of the timeout.
-    // console.log(html);
-    // const dom = new JSDOM(html);
-    // const {window} = dom;
-    // const $ = jQuery = require('jquery')(window);
-    // const title = $('title').text();
-    // console.log(title);
-
+    if (!html) {
+        // FIXME: html sometimes will be empty, not sure if it is because of the timeout.
+        console.log(`html is empty, url=${url}`);
+    }
     // After your task is done, destroy your browser context
     await browserless.destroyContext();
     // await browser.close();
@@ -847,8 +846,10 @@ async function processNhcDaily(date, url) {
             newData[date] = totalData[date];
         });
         fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
+        return true;
     } else {
         console.log(`process failed, result: ${result}`);
+        return false;
     }
 }
 
@@ -881,7 +882,11 @@ function extractNhcSummary(html) {
     const dom = new JSDOM(html);
     const {window} = dom;
     const $ = jQuery = require('jquery')(window);
-    return $('#xw_box').text();
+    const summary = $('#xw_box').text();
+    if (!summary) {
+        console.log('summary is empty, title=' + $('title').text());
+    }
+    return summary;
 }
 
 function processNhcData(summary) {
