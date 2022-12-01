@@ -6,16 +6,16 @@
   "scripts": {
     "start": "node ./server/main.js run $OVERRIDE",
     "daily": "node ./server/main.js daily $URL",
-    "listwechat": "node ./server/main.js listwechat 10",
-    "listwsj": "node ./server/main.js listwsj 100",
-    "listnhc": "node ./server/main.js listnhc 100",
+    "listwechat": "node ./server/main.js listwechat 5",
+    "listwsj": "node ./server/main.js listwsj 5",
+    "listnhc": "node ./server/main.js listnhc 5",
     "nhchistory": "node ./server/main.js nhchistory",
     "fetch": "node ./server/main.js fetch"
   },
   "author": "",
   "license": "ISC",
-  "engines" : {
-    "node" : ">=14.0.0 <16.0.0"
+  "engines": {
+    "node": ">=14.0.0 <16.0.0"
   },
   "dependencies": {
     "axios": "^0.27.2",

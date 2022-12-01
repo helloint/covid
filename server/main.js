@@ -53,10 +53,10 @@ async function main() {
             await getRegionStatusList(arg0);
             break;
         case 'listwsj':
-            await getTopicsFromWsj(arg0, '2022-01-01 00:00:00');
+            await getTopicsFromWsj(arg0, '2022-01-01 00:00:00', true);
             break;
         case 'listnhc':
-            await getTopicsFromNhc(arg0, '2022-01-01 00:00:00');
+            await getTopicsFromNhc(arg0, '2022-01-01 00:00:00', true);
             break;
         case 'listwechat':
             await getLatestTopicsFromWeChat(arg0, true);
@@ -120,47 +120,66 @@ async function run(override) {
         return;
     }
 
-    var topics = await getLatestTopicsFromWeChat();
-    if (topics) {
-        let topic = null;
-        var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
-        if (override || dailyData.date !== yesterdayStr) {
-            topic = topics.find((item) => {
-                const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
-                const res = item.title.match(regex);
-                if (res) {
-                    return true;
+    console.log('Processing wechat data...');
+    if (config.token) {
+        var topics = await getLatestTopicsFromWeChat();
+        if (topics) {
+            let topic = null;
+            var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
+            if (override || dailyData.date !== yesterdayStr) {
+                topic = topics.find((item) => {
+                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
+                    const res = item.title.match(regex);
+                    if (res) {
+                        return true;
+                    }
+                });
+                if (topic) {
+                    await processDailyData(topic.url);
+                    console.log('Wechat data done.');
+                    sendNotify('covid_daily_done');
+                } else {
+                    console.log('Wechat topic not ready.');
                 }
-            });
-            if (topic) {
-                console.log('processing daily data...');
-                await processDailyData(topic.url);
-                sendNotify('covid_daily_done');
-            } else {
-                console.log('Daily topic not ready.');
             }
-        }
 
-        if (override || addressData.date !== yesterdayStr) {
-            topic = topics.find((item) => {
-                // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
-                // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
-                const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
-                const res = item.title.match(regex);
-                if (res) {
-                    return true;
+            if (override || addressData.date !== yesterdayStr) {
+                topic = topics.find((item) => {
+                    // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
+                    // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
+                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
+                    const res = item.title.match(regex);
+                    if (res) {
+                        return true;
+                    }
+                });
+                if (topic) {
+                    console.log('processing address data...');
+                    await processAddressFromWechat(topic.url);
+                    sendNotify('covid_address_done');
+                } else {
+                    console.log('Address topic not ready.');
                 }
-            });
-            if (topic) {
-                console.log('processing address data...');
-                await processAddressFromWechat(topic.url);
-                sendNotify('covid_address_done');
-            } else {
-                console.log('Address topic not ready.');
             }
+        } else {
+            console.log('No wechat topics.');
         }
     } else {
-        console.log('No Topics.');
+        console.log('Wechat token not set, skipped.');
+    }
+
+    // nhc
+    console.log('Processing nhc data...');
+    var nhcTopics = await getTopicsFromNhc(1);
+    if (nhcTopics && nhcTopics.length > 0) {
+        if (nhcTopics[0][0] === yesterdayStr) {
+            await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
+            console.log('Nhc data done.');
+        } else {
+            console.log('Nhc topic not ready.');
+        }
+    } else {
+        console.log('No nhc Topics.');
     }
 }
 
@@ -191,7 +210,7 @@ async function getLatestTopicsFromWeChat(total = 5, enableLog) {
                 break;
             }
         } catch (e) {
-            console.log(response.data.base_resp.err_msg);
+            console.log(e);
             !enableLog && sendNotify('covid_session_expired');
             break;
         }
@@ -239,9 +258,13 @@ async function getLatestTopicsFromWeChatByPage(pageNum) {
 }
 
 function sendNotify(errCode) {
-    const webHookUrl = `https://maker.ifttt.com/trigger/${errCode}/json/with/key/${config.key}`;
-    console.log(`webHookUrl: ${webHookUrl}`);
-    axios.get(webHookUrl);
+    if (config.key) {
+        const webHookUrl = `https://maker.ifttt.com/trigger/${errCode}/json/with/key/${config.key}`;
+        axios.get(webHookUrl);
+        console.log(`webHookUrl: ${webHookUrl}`);
+    } else {
+        console.log('no webHook key, skipped');
+    }
 }
 
 async function processDailyData(url, showRegions = true, reset = false) {
@@ -633,9 +656,10 @@ function writeDailyAddressesToFile(date, addresses) {
  * 从上海市卫健委网站获取每日播报数据的文章链接
  * @param total
  * @param startDate
+ * @param enableLog
  * @returns {Promise<*[]>}
  */
-async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00') {
+async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00', enableLog = false) {
     const getTopics = async (total, fromDate) => {
         const getPageUrl = (pageNum) => {
             return `https://ss.shanghai.gov.cn/search?page=${pageNum + 1}&view=&contentScope=1&dateOrder=2&tr=1&dr=&format=1&uid=00000180-3d55-851b-52bb-a9dd280219fe&sid=00000180-3d55-851b-0277-4156fe63c148&re=2&all=1&debug=&siteId=wsjkw.sh.gov.cn&siteArea=all&q=%E6%96%B0%E5%A2%9E%E6%9C%AC%E5%9C%9F%E6%96%B0%E5%86%A0%E8%82%BA%E7%82%8E%E7%A1%AE%E8%AF%8A%E7%97%85%E4%BE%8B`;
@@ -679,14 +703,14 @@ async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00') {
 
         const ret = [];
         let pageNum = 0;
-        console.log(`total: ${total}`);
+        enableLog && console.log(`total: ${total}`);
         let dateExceeded = false;
         while (!dateExceeded && ret.length <= total) {
             let url = getPageUrl(pageNum);
             const {result, exceeded} = await filterMatchedTopics(url, fromDate);
             ret.push(...result);
             pageNum++;
-            console.log(`count: ${ret.length}`);
+            enableLog && console.log(`count: ${ret.length}`);
             if (exceeded) {
                 dateExceeded = true;
             }
@@ -696,7 +720,7 @@ async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00') {
 
     const fromDate = startDate ? new Date(startDate).getTime() : null;
     const result = await getTopics(total, fromDate);
-    result.forEach((item) => {
+    enableLog && result.forEach((item) => {
         console.log(`[${item[0]}]${item[2]} ${item[1]}`);
     });
 
@@ -710,9 +734,10 @@ async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00') {
  *
  * @param total
  * @param startDate
+ * @param enableLog
  * @returns {Promise<*[]>}
  */
-async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00') {
+async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', enableLog = false) {
     const browser = createBrowser();
     const getTopics = async (total, fromDate) => {
         const getPageUrl = (pageNum) => {
@@ -762,14 +787,14 @@ async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00') {
 
         const ret = [];
         let pageNum = 0;
-        console.log(`total: ${total}`);
+        enableLog && console.log(`total: ${total}`);
         let dateExceeded = false;
         while (!dateExceeded && ret.length <= total) {
             let url = getPageUrl(pageNum);
             const {result, exceeded} = await filterMatchedTopics(url, fromDate);
             ret.push(...result);
             pageNum++;
-            console.log(`count: ${ret.length}`);
+            enableLog && console.log(`count: ${ret.length}`);
             if (exceeded) {
                 dateExceeded = true;
             }
@@ -779,8 +804,8 @@ async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00') {
 
     const fromDate = startDate ? new Date(startDate).getTime() : null;
     const result = await getTopics(total, fromDate);
-    result.forEach((item) => {
-        console.log(`[${item[0]}]${item[2]} ${item[1]}`);
+    enableLog && result.forEach((item) => {
+         console.log(`[${item[0]}]${item[2]} ${item[1]}`);
     });
 
     await browser.close();
@@ -806,6 +831,25 @@ async function fetchProtectedUrl(browser, url) {
     await browserless.destroyContext();
     // await browser.close();
     return html;
+}
+
+async function processNhcDaily(date, url) {
+    const feed = `${dataFilePath}/nhcTotal.json`;
+    const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
+    const browser = createBrowser();
+    const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
+    await browser.close();
+    if (result) {
+        const newData = {};
+        newData[date] = result;
+        console.log(date, result);
+        Object.keys(totalData).forEach(date => {
+            newData[date] = totalData[date];
+        });
+        fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
+    } else {
+        console.log(`process failed, result: ${result}`);
+    }
 }
 
 async function processNhcHistory() {
@@ -1112,6 +1156,11 @@ function parseAddress(content) {
     return ret;
 }
 
+/**
+ * format date
+ * @param date
+ * @returns {string}  yyyy-MM-dd
+ */
 function parseDate(date) {
     var yyyy = date.getFullYear();
     var mm = date.getMonth() + 1;
