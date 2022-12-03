@@ -182,6 +182,7 @@ async function run(override) {
             const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
             if (result) {
                 console.log('Nhc data done.');
+                sendNotify('nhc_daily_done');
             }
         } else {
             console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
