@@ -110,12 +110,18 @@ async function run(override) {
     override = override === 'true'; // original override is string type, 'true': 'false'
     const yesterday = new Date(now().getTime() - 1000 * 60 * 60 * 24);
     const yesterdayStr = parseDate(yesterday);
+
     const dailyFeed = `${dataFilePath}/daily.json`;
     const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
     const addressFeed = `${dataFilePath}/address.json`;
     const addressData = JSON.parse(fs.readFileSync(addressFeed, 'utf8'));
+    const nhcFeed = `${dataFilePath}/nhcTotal.json`;
+    const nhcData = JSON.parse(fs.readFileSync(nhcFeed, 'utf8'));
 
-    if (!override && dailyData.date === yesterdayStr && addressData.date === yesterdayStr) {
+    if (!override
+        && dailyData.date === yesterdayStr
+        && addressData.date === yesterdayStr
+        && nhcData[Object.keys(nhcData)[0]] === yesterdayStr) {
         console.log('Today data already generated. Quit!');
         return;
     }
@@ -178,7 +184,7 @@ async function run(override) {
                 console.log('Nhc data done.');
             }
         } else {
-            console.log('Nhc topic not ready.');
+            console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
         }
     } else {
         console.log('No nhc Topics.');
@@ -757,24 +763,30 @@ async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', en
             const dom = new JSDOM(html);
             const {window} = dom;
             const ret = [];
-            const regex = /截至(\d+)月(\d+)日24时新型冠状病毒肺炎疫情最新情况/;
-            const dateRegex = /(\d+)-(\d+)-(\d+)/;
+            const titleRegex = /截至(\d+)月(\d+)日24时新型冠状病毒肺炎疫情最新情况/;
+            const titleDateRegex = /(\d+)-(\d+)-(\d+)/;
 
             const $ = jQuery = require('jquery')(window);
             let exceeded = false;
-            console.log('Nhc Topic length:' + $('ul.zxxx_list li').length);
+            const topicNum = $('ul.zxxx_list li').length;
+            if (topicNum === 0) {
+                console.log(html);
+            }
+            console.log('Nhc Topic length:' + topicNum);
             $('ul.zxxx_list li').each((index, item) => {
                 const title = $(item).find('a').text().trim();
-                const date = $(item).find('span.ml').text().trim();
-                const match = title.match(regex);
-                const result = date.match(dateRegex);
-                if (match && result) {
+                const titleDate = $(item).find('span.ml').text().trim();
+                const titleResult = title.match(titleRegex);
+                const titleDateResult = titleDate.match(titleDateRegex);
+                if (titleResult && titleDateResult) {
                     const path = completeUrl($(item).find('a').attr('href'), url);
-                    // 跨年的时候，result[1]对应的年份会出现1天的偏差，需手动修正。
-                    ret.push([[result[1], match[1], match[2]].join('-'), path, title]);
+                    const summaryDate = new Date(titleDateResult[1], titleDateResult[2] - 1, titleDateResult[3]);
+                    summaryDate.setDate(summaryDate.getDate() - 1);
+                    const dateStr = `${summaryDate.getFullYear()}-${(summaryDate.getMonth() + 1) < 10 ? '0' : ''}${summaryDate.getMonth() + 1}-${summaryDate.getDate() < 10 ? '0' : ''}${summaryDate.getDate()}`;
+                    ret.push([dateStr, path, title]);
 
                     if (fromDate) {
-                        const itemDate = new Date(date).getTime();
+                        const itemDate = new Date(titleDate).getTime();
                         if (itemDate <= fromDate) {
                             exceeded = true;
                             return false;
@@ -816,19 +828,22 @@ async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', en
 }
 
 async function fetchProtectedUrl(browser, url) {
-    const browserless = await browser.createContext({
-        // waitForTimeout: 3000
-    });
-    const html = await browserless.html(url, {
-        // waitForTimeout: 3000
-    });
-    if (!html) {
-        // FIXME: html sometimes will be empty, not sure if it is because of the timeout.
-        console.log(`html is empty, url=${url}`);
+    const browserless = await browser.createContext({retry: 0});
+    const ping = browserless.evaluate((page, response) => ({
+        page,
+        response,
+    }));
+
+    const result = await ping(url);
+    let html = null;
+    if (result.response.status() === 200) {
+        html = result.page.html();
+    } else {
+        console.log(`http statusCode=${result.response.status()}, retry...`);
+        html = await browserless.html(url);
+        // console.log(html);
     }
-    // After your task is done, destroy your browser context
-    await browserless.destroyContext();
-    // await browser.close();
+
     return html;
 }
 
