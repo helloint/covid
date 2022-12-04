@@ -175,20 +175,22 @@ async function run(override) {
     }
 
     // nhc
-    console.log('Processing nhc data...');
-    var nhcTopics = await getTopicsFromNhc(1);
-    if (nhcTopics && nhcTopics.length > 0) {
-        if (nhcTopics[0][0] === yesterdayStr) {
-            const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
-            if (result) {
-                console.log('Nhc data done.');
-                sendNotify('nhc_daily_done');
+    if (override || nhcData[Object.keys(nhcData)[0]] !== yesterdayStr) {
+        console.log('Processing nhc data...');
+        var nhcTopics = await getTopicsFromNhc(1);
+        if (nhcTopics && nhcTopics.length > 0) {
+            if (nhcTopics[0][0] === yesterdayStr) {
+                const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
+                if (result) {
+                    console.log('Nhc data done.');
+                    sendNotify('nhc_daily_done');
+                }
+            } else {
+                console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
             }
         } else {
-            console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
+            console.log('No nhc Topics.');
         }
-    } else {
-        console.log('No nhc Topics.');
     }
 }
 
