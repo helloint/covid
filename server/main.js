@@ -118,79 +118,85 @@ async function run(override) {
     const nhcFeed = `${dataFilePath}/nhcTotal.json`;
     const nhcData = JSON.parse(fs.readFileSync(nhcFeed, 'utf8'));
 
-    if (!override
-        && dailyData.date === yesterdayStr
-        && addressData.date === yesterdayStr
-        && nhcData[Object.keys(nhcData)[0]] === yesterdayStr) {
-        console.log('Today data already generated. Quit!');
-        return;
-    }
-
-    console.log('Processing wechat data...');
-    if (config.token) {
-        var topics = await getLatestTopicsFromWeChat();
-        if (topics) {
-            let topic = null;
-            var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
-            if (override || dailyData.date !== yesterdayStr) {
-                topic = topics.find((item) => {
-                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
-                    const res = item.title.match(regex);
-                    if (res) {
-                        return true;
+    console.log('Processing daily data...');
+    if (override
+        || dailyData.date === yesterdayStr
+        || addressData.date === yesterdayStr
+        || Object.keys(nhcData)[0] === yesterdayStr
+    ) {
+        if (override
+            || dailyData.date === yesterdayStr
+            || addressData.date === yesterdayStr
+        ) {
+            console.log('Processing wechat data...');
+            if (config.token) {
+                var topics = await getLatestTopicsFromWeChat();
+                if (topics) {
+                    let topic = null;
+                    var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
+                    if (override || dailyData.date !== yesterdayStr) {
+                        topic = topics.find((item) => {
+                            const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
+                            const res = item.title.match(regex);
+                            if (res) {
+                                return true;
+                            }
+                        });
+                        if (topic) {
+                            await processDailyData(topic.url);
+                            console.log('Wechat data done.');
+                            sendNotify('covid_daily_done');
+                        } else {
+                            console.log('Wechat topic not ready.');
+                        }
                     }
-                });
-                if (topic) {
-                    await processDailyData(topic.url);
-                    console.log('Wechat data done.');
-                    sendNotify('covid_daily_done');
-                } else {
-                    console.log('Wechat topic not ready.');
-                }
-            }
 
-            if (override || addressData.date !== yesterdayStr) {
-                topic = topics.find((item) => {
-                    // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
-                    // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
-                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
-                    const res = item.title.match(regex);
-                    if (res) {
-                        return true;
+                    if (override || addressData.date !== yesterdayStr) {
+                        topic = topics.find((item) => {
+                            // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
+                            // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
+                            const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
+                            const res = item.title.match(regex);
+                            if (res) {
+                                return true;
+                            }
+                        });
+                        if (topic) {
+                            console.log('processing address data...');
+                            await processAddressFromWechat(topic.url);
+                            sendNotify('covid_address_done');
+                        } else {
+                            console.log('Address topic not ready.');
+                        }
                     }
-                });
-                if (topic) {
-                    console.log('processing address data...');
-                    await processAddressFromWechat(topic.url);
-                    sendNotify('covid_address_done');
                 } else {
-                    console.log('Address topic not ready.');
-                }
-            }
-        } else {
-            console.log('No wechat topics.');
-        }
-    } else {
-        console.log('Wechat token not set, skipped.');
-    }
-
-    // nhc
-    if (override || nhcData[Object.keys(nhcData)[0]] !== yesterdayStr) {
-        console.log('Processing nhc data...');
-        var nhcTopics = await getTopicsFromNhc(1);
-        if (nhcTopics && nhcTopics.length > 0) {
-            if (nhcTopics[0][0] === yesterdayStr) {
-                const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
-                if (result) {
-                    console.log('Nhc data done.');
-                    sendNotify('nhc_daily_done');
+                    console.log('No wechat topics.');
                 }
             } else {
-                console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
+                console.log('Wechat token not set, skipped.');
             }
-        } else {
-            console.log('No nhc Topics.');
         }
+
+        // nhc
+        if (override || Object.keys(nhcData)[0] !== yesterdayStr) {
+            console.log('Processing nhc data...');
+            var nhcTopics = await getTopicsFromNhc(1);
+            if (nhcTopics && nhcTopics.length > 0) {
+                if (nhcTopics[0][0] === yesterdayStr) {
+                    const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
+                    if (result) {
+                        console.log('Nhc data done.');
+                        sendNotify('nhc_daily_done');
+                    }
+                } else {
+                    console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
+                }
+            } else {
+                console.log('No nhc Topics.');
+            }
+        }
+    } else {
+        console.log('Today data already generated. Quit!');
     }
 }
 
