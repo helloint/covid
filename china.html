@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>China</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
     <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
     <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
@@ -11,16 +10,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script src="js/util.js"></script>
     <style>
-        /*html, body {margin: 0}*/
+        html, body {margin: 0}
         body {font-family:Helvetica;}
         #map-container {position: relative; width: 1200px; height: 800px;}
-        #map-container .curr-date {position: absolute; left: 0; top: 55px; color: #fff; width: 1200px; text-align: center;}
+        #map-container .curr-date {position: absolute; left: 0; top: 55px; width: 1200px; text-align: center;}
         #map-container .chart-map {width: 100%; height: 100%;}
         #map-container .logo {position: absolute; right: 53px; bottom: 5px; width: 20px; height: 20px; }
         #map-container .logo img {width: 100%; height: 100%; border-radius: 5px;}
         #slider-container {display: flex; width: 1200px;}
         #slider-container .title {font-size: 14px; line-height: 26px;}
-        #slider-container .slider {flex-grow: 1; width: 800px; margin: 5px 25px 0;}
+        #slider-container .slider {flex-grow: 1; width: 800px; margin: 5px 25px 0; background-color: #f8f9fa;}
         #slider-container .slider .ui-slider-handle {margin-left: -27px; width: 55px; height: 1.6em; text-align: center; line-height: 1.6em; font-size: 12px;}
         #slider-container .controller {width: 26px; height: 26px; cursor: pointer;}
     </style>
@@ -39,42 +38,35 @@
     <img id="playBtn" class="controller" src="images/play.svg" />
 </div>
 <script>
-    var myChart = echarts.init(document.getElementById('container'), 'dark');
+    var myChart = echarts.init(document.getElementById('container'));
     var dataUrl = './data/nhcTotal.json';
     var regions = [['北京', 'bj'], ['天津', 'tj'], ['河北', 'heb'], ['山西', 'sx'], ['内蒙古', 'nm'], ['辽宁', 'ln'], ['吉林', 'jl'], ['黑龙江', 'hlj'], ['上海', 'sh'], ['江苏', 'js'], ['浙江', 'zj'], ['安徽', 'ah'], ['福建', 'fj'], ['江西', 'jx'], ['山东', 'sd'], ['河南', 'hen'], ['湖北', 'hub'], ['湖南', 'hun'], ['广东', 'gd'], ['广西', 'gx'], ['海南', 'hn'], ['重庆', 'cq'], ['四川', 'sc'], ['贵州', 'gz'], ['云南', 'yn'], ['西藏', 'xz'], ['陕西', 'sax'], ['甘肃', 'gs'], ['青海', 'qh'], ['宁夏', 'nx'], ['新疆', 'xj'], ['兵团', 'bt'],];
-    var chartData = []; // {name: "新疆", value: 500}
+    var chartData = []; // [{}, {}]
     var totalData = null;
     var lastDate = null;
     var currentDate = null;
     var timeMachineIntervalId = null;
-    fetch(dataUrl).then(function (response) {
-        return response.json()
-    }).then(jsonData => {
-        totalData = jsonData;
-        lastDate = Object.keys(totalData)[0];
-        currentDate = lastDate;
-        initTimeMachine();
-        renderUI();
-    });
     var option = {
+        color:['#d71345','#f58220'],
+        backgroundColor: '#f8f9fa',
+        legend: {
+            top: 100,
+        },
         title: {
             text: '全国新冠肺炎疫情情况',
             subtext: '信息来自国家卫生健康委员会官方网站',
             sublink: 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml',
             left: 'center',
-            textStyle: {
-                color: '#fff'
-            }
         },
         visualMap: {
             type: 'piecewise',
             pieces: [
-                {max: 0, label: '0'},
+                {min: 0, max: 0, label: '0'},
                 {min: 1, max: 9},
                 {min: 10, max: 99},
                 {min: 100, max: 999},
                 {min: 1000, max: 9999},
-                {min: 10000, label: '>= 10000'}
+                {min: 10000, label: '≧ 10000'}
             ],
             left: 'right',
             inRange: {
@@ -90,18 +82,33 @@
             showDelay: 0,
             transitionDuration: 0.2,
             formatter: function (obj) {
-                return (`${obj.name}<br/>${obj.value}人 (确诊 + 无症状)`);
+                // obj只能拿到datasetIndex=0 也就是'确诊'的数据。所以变通方式
+                var confirmVal = null;
+                var wzzVal = null;
+                try {
+                    confirmVal = option.dataset[0].source.filter(region => region.name === obj.name)[0].value;
+                } catch (e) {
+                    confirmVal = '--';
+                }
+                try {
+                    wzzVal = option.dataset[1].source.filter(region => region.name === obj.name)[0].value;
+                } catch (e) {
+                    wzzVal = '--';
+                }
+                return (`地区：${obj.name}<br>阳性：${obj.value}人<hr>确诊：${confirmVal}人<br>无症状：${wzzVal}人`);
             }
         },
+        dataset: {},
         series: [
             {
-                name: '',
+                name: '确诊',
                 type: 'map',
                 map: 'china',  // 中国地图
                 roam: false, // 滚动缩放
                 itemStyle: {
                     areaColor: '#fff'  // 省份块的颜色
                 },
+                datasetIndex: 0,
                 label: {
                     show: true
                 },
@@ -110,18 +117,47 @@
                         show: true
                     }
                 },
+                showLegendSymbol: false,
+            },
+            {
+                name: '无症状',
+                type: 'map',
+                map: 'china',  // 中国地图
+                roam: false, // 滚动缩放
+                itemStyle: {
+                    areaColor: '#fff'  // 省份块的颜色
+                },
+                datasetIndex: 1,
+                label: {
+                    show: true
+                },
+                emphasis: {
+                    label: {
+                        show: true
+                    }
+                },
+                showLegendSymbol: false,
             }
         ]
     }
+    fetch(dataUrl).then(function (response) {
+        return response.json()
+    }).then(jsonData => {
+        totalData = jsonData;
+        lastDate = Object.keys(totalData)[0];
+        currentDate = lastDate;
+        initTimeMachine();
+        renderUI();
+    });
 
     function renderUI() {
-        chartData = [];
+        chartData = [{source: []}, {source: []}];
         const currentData = totalData[currentDate];
         regions.forEach(regionData => {
-            const num = currentData[regionData[1]][0] + currentData[regionData[1]][1];
-            chartData.push({name: regionData[0], value: num});
+            chartData[0].source.push({name: regionData[0], value: currentData[regionData[1]][0]});
+            chartData[1].source.push({name: regionData[0], value: currentData[regionData[1]][1]});
         });
-        option.series[0].data = chartData;
+        option.dataset = chartData;
         myChart.setOption(option);
         $('#nowDate').text(currentDate);
     }
