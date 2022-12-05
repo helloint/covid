@@ -120,7 +120,7 @@ async function run(override) {
 
     console.log('Processing daily data...');
     if (!override
-        || dailyData.date === yesterdayStr
+        && dailyData.date === yesterdayStr
         && addressData.date === yesterdayStr
         && Object.keys(nhcData)[0] === yesterdayStr
     ) {
