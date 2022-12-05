@@ -37,19 +37,19 @@ async function main() {
             await run(arg0);
             break;
         case 'daily':
-            // url = 'https://mp.weixin.qq.com/s/-Mrve9R04c6Q6l9T6aTMqw';
+            // arg0 = 'https://mp.weixin.qq.com/s/-Mrve9R04c6Q6l9T6aTMqw';
             await processDailyData(arg0);
             break;
         case 'address':
-            // url = 'https://mp.weixin.qq.com/s/zERWgFNJzWTydSmvjRPFLw';
-            processAddressFromWechat(arg0);
+            arg0 = 'https://mp.weixin.qq.com/s/EH49z-wuXPbNqLrZzZQrqQ';
+            await processAddressFromWechat(arg0);
             break;
         case 'addressmh':
-            // url = 'https://mp.weixin.qq.com/s/t-fxXIdQqb2BLwO3rCoP8A';
+            // arg0 = 'https://mp.weixin.qq.com/s/t-fxXIdQqb2BLwO3rCoP8A';
             processAddressFromWechatMh(arg0);
             break;
         case '3':
-            // url = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
+            // arg0 = 'https://mp.weixin.qq.com/s?__biz=MzA3NzEzNzAwOQ==&mid=2650536904&idx=1&sn=003379bebf1b0a85eaa2f81c95a9a5f8&chksm=8759ced6b02e47c0379092302a0a20048a47b0ed9a92f2ddf6d58005ba728513821245df7fa4&mpshare=1&scene=23&srcid=0421CMdtMTbZHi7DR5xJTfX0&sharer_sharetime=1650499140777&sharer_shareid=b547167d055d935fd3f9f56094533f76%23rd';
             await getRegionStatusList(arg0);
             break;
         case 'listwsj':
@@ -119,84 +119,85 @@ async function run(override) {
     const nhcData = JSON.parse(fs.readFileSync(nhcFeed, 'utf8'));
 
     console.log('Processing daily data...');
-    if (override
+    if (!override
         || dailyData.date === yesterdayStr
-        || addressData.date === yesterdayStr
-        || Object.keys(nhcData)[0] === yesterdayStr
+        && addressData.date === yesterdayStr
+        && Object.keys(nhcData)[0] === yesterdayStr
     ) {
-        if (override
-            || dailyData.date === yesterdayStr
-            || addressData.date === yesterdayStr
-        ) {
-            console.log('Processing wechat data...');
-            if (config.token) {
-                var topics = await getLatestTopicsFromWeChat();
-                if (topics) {
-                    let topic = null;
-                    var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
-                    if (override || dailyData.date !== yesterdayStr) {
-                        topic = topics.find((item) => {
-                            const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
-                            const res = item.title.match(regex);
-                            if (res) {
-                                return true;
-                            }
-                        });
-                        if (topic) {
-                            await processDailyData(topic.url);
-                            console.log('Wechat data done.');
-                            sendNotify('covid_daily_done');
-                        } else {
-                            console.log('Wechat topic not ready.');
-                        }
-                    }
-
-                    if (override || addressData.date !== yesterdayStr) {
-                        topic = topics.find((item) => {
-                            // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
-                            // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
-                            const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
-                            const res = item.title.match(regex);
-                            if (res) {
-                                return true;
-                            }
-                        });
-                        if (topic) {
-                            console.log('processing address data...');
-                            await processAddressFromWechat(topic.url);
-                            sendNotify('covid_address_done');
-                        } else {
-                            console.log('Address topic not ready.');
-                        }
-                    }
-                } else {
-                    console.log('No wechat topics.');
-                }
-            } else {
-                console.log('Wechat token not set, skipped.');
-            }
-        }
-
-        // nhc
-        if (override || Object.keys(nhcData)[0] !== yesterdayStr) {
-            console.log('Processing nhc data...');
-            var nhcTopics = await getTopicsFromNhc(1);
-            if (nhcTopics && nhcTopics.length > 0) {
-                if (nhcTopics[0][0] === yesterdayStr) {
-                    const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
-                    if (result) {
-                        console.log('Nhc data done.');
-                        sendNotify('nhc_daily_done');
-                    }
-                } else {
-                    console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
-                }
-            } else {
-                console.log('No nhc Topics.');
-            }
-        }
-    } else {
         console.log('Today data already generated. Quit!');
+        return;
+    }
+
+    if (override
+        || dailyData.date !== yesterdayStr
+        || addressData.date !== yesterdayStr
+    ) {
+        console.log('Processing wechat data...');
+        if (config.token) {
+            var topics = await getLatestTopicsFromWeChat();
+            if (topics) {
+                let topic = null;
+                var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
+                if (override || dailyData.date !== yesterdayStr) {
+                    topic = topics.find((item) => {
+                        const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
+                        const res = item.title.match(regex);
+                        if (res) {
+                            return true;
+                        }
+                    });
+                    if (topic) {
+                        await processDailyData(topic.url);
+                        console.log('Wechat data done.');
+                        sendNotify('covid_daily_done');
+                    } else {
+                        console.log('Wechat topic not ready.');
+                    }
+                }
+
+                if (override || addressData.date !== yesterdayStr) {
+                    topic = topics.find((item) => {
+                        // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
+                        // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
+                        const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
+                        const res = item.title.match(regex);
+                        if (res) {
+                            return true;
+                        }
+                    });
+                    if (topic) {
+                        console.log('processing address data...');
+                        await processAddressFromWechat(topic.url);
+                        sendNotify('covid_address_done');
+                    } else {
+                        console.log('Address topic not ready.');
+                    }
+                }
+            } else {
+                console.log('No wechat topics.');
+            }
+        } else {
+            console.log('Wechat token not set, skipped.');
+        }
+    }
+
+    // nhc
+    if (override || Object.keys(nhcData)[0] !== yesterdayStr) {
+        console.log('Processing nhc data...');
+        var nhcTopics = await getTopicsFromNhc(1);
+        if (nhcTopics && nhcTopics.length > 0) {
+            if (nhcTopics[0][0] === yesterdayStr) {
+                const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
+                if (result) {
+                    console.log('Nhc data done.');
+                    sendNotify('nhc_daily_done');
+                }
+            } else {
+                console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
+            }
+        } else {
+            console.log('No nhc Topics.');
+        }
     }
 }
 
@@ -1079,6 +1080,25 @@ async function getAddressFromWechat(url) {
     console.log(`date: ${date}`);
 
     let districtName = null;
+    /*
+    TODO: try to handle new pattern
+    2022年12月3日，浦东新区新增5例本土确诊病例、125例本土无症状感染者，其中128例在隔离管控中发现。
+    2022年12月3日，黄浦区新增1例本土确诊病例，新增25例无症状感染者。其中1例确诊病例因症就诊发现（12月3日已发布），其余无症状感染者均在隔离管控中发现。
+    2022年12月3日0-24时，静安区无新增本土确诊病例，新增14例本土无症状感染者，其中1例无症状感染者在常态化核酸检测中发现（12月3日已通报），另13例无症状感染者在隔离管控中发现。
+    2022年12月3日0-24时，徐汇区无新增本土新冠肺炎确诊病例，新增无症状感染者19例，均在隔离管控中发现。
+    2022年12月3日，长宁区新增4例本土确诊病例，新增23例本土无症状感染者，其中1例确诊病例在社会面核酸检测中发现（12月3日已发布），其余均在隔离管控中发现，
+    2022年12月3日（0—24时），普陀区新增2例本土确诊病例，新增18例本土无症状感染者，均在隔离管控中发现。其中，7人外省来沪返沪后即被隔离管控，13人为此前报告的本土感染者的密切接触者。
+    2022年12月3日0-24时，虹口区新增本土确诊病例3例和本土无症状感染者13例，均在隔离管控中发现。
+    2022年12月3日，杨浦区新增1例本土确诊病例，新增27例本土无症状感染者，均在隔离管控中发现。
+    2022年12月3日，宝山区新增4例本区确诊病例、19例本土无症状感染者，其中1例因身体不适就诊核酸检测发现（已通报）；1例在常态化核酸检测中发现（已通报）；7例为外省来沪返沪人员，抵沪后被落实管控中发现；其余14例为密切接触者，在隔离管控中发现
+    2022年12月3日，闵行区新增4例本土确诊病例，新增41例本土无症状感染者，1例本土确诊病例在常态化核酸检测发现，其余在隔离管控中发现。
+    2022年12月3日，嘉定区新增本土确诊病例2例，新增本土无症状感染者26例，均在隔离管控中发现，
+    2022年12月3日，金山区无新增本土确诊病例，新增5例本土无症状感染者，均在隔离管控中发现。
+    2022年12月3日，松江区新增本土新冠肺炎确诊病例4例和本土无症状感染者38例，其中3例新冠肺炎确诊病例在常态化核酸检测中发现，其余在隔离管控中发现。
+    2022年12月3日，青浦区新增本土新冠确诊病例4例，新增无症状感染者26例，其中27例在隔离管控中发现。
+    2022年12月3日，奉贤区新增2例本土新冠肺炎确诊病例，新增28例本土无症状感染者，均在隔离管控中发现。其中7例为此前本市报告的本土感染者的密切接触者，23例为外省来沪返沪人员。
+    2022年12月3日，崇明区新增3例新冠肺炎本土无症状感染者，其中2例为外省来崇人员、1例为闭环管理人员，均在闭环管控中发现。
+     */
     $('#js_content section[data-role=title]').each((index, item) => {
         if ($(item).attr('data-role') === 'title') {
             districtName = $(item).find('section[data-brushtype="text"]').text();
