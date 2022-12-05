@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>China</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
     <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
     <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
@@ -10,36 +11,38 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script src="js/util.js"></script>
     <style>
-        html, body {margin: 0}
-        #container {width: 1200px; height: 800px;}
-        #slider-container {position: fixed; left: 1250px; top: 57px; color: #fff;}
-        #slider-container .title {margin-left: -18px; margin-bottom: 14px; font-size: 16px;}
-        #slider-container .slider {height: 400px;}
-        #slider-container .ui-slider-handle {width: 55px; height: 1.6em; left: -23px; margin-top: -.8em; text-align: center; line-height: 1.6em; font-size: 12px;}
-        #slider-container .control {margin-left: -7px; margin-right: 11px; cursor: pointer;}
-        #nowDate {position: fixed; left: 0; top: 55px; color: #fff; width: 1200px; text-align: center;}
-        #logo {position: fixed; left: 1120px; top: 773px;}
-        /*#logo {position: fixed; left: 590px; top: 85px;}*/
-        #logo img {width: 20px; height: 20px; border-radius: 5px;}
+        /*html, body {margin: 0}*/
+        body {font-family:Helvetica;}
+        #map-container {position: relative; width: 1200px; height: 800px;}
+        #map-container .curr-date {position: absolute; left: 0; top: 55px; color: #fff; width: 1200px; text-align: center;}
+        #map-container .chart-map {width: 100%; height: 100%;}
+        #map-container .logo {position: absolute; right: 53px; bottom: 5px; width: 20px; height: 20px; }
+        #map-container .logo img {width: 100%; height: 100%; border-radius: 5px;}
+        #slider-container {display: flex; width: 1200px;}
+        #slider-container .title {font-size: 14px; line-height: 26px;}
+        #slider-container .slider {flex-grow: 1; width: 800px; margin: 5px 25px 0;}
+        #slider-container .slider .ui-slider-handle {margin-left: -27px; width: 55px; height: 1.6em; text-align: center; line-height: 1.6em; font-size: 12px;}
+        #slider-container .controller {width: 26px; height: 26px; cursor: pointer;}
     </style>
 </head>
 <body>
-<div id="container"></div>
+<div id="map-container">
+    <div id="container" class="chart-map"></div>
+    <div id="nowDate" class="curr-date"></div>
+    <div class="logo"><img src="images/helloint.jpg"/></div>
+</div>
 <div id="slider-container">
-    <div class="title">时光鸡</div>
+    <div class="title">时光机</div>
     <div id="slider" class="slider">
         <div class="ui-slider-handle"></div>
     </div>
-    <img id="playBtn" class="control" src="images/play.svg" />
+    <img id="playBtn" class="controller" src="images/play.svg" />
 </div>
-<div id="nowDate"></div>
-<div id="logo"><img src="images/helloint.jpg"/></div>
 <script>
     var myChart = echarts.init(document.getElementById('container'), 'dark');
     var dataUrl = './data/nhcTotal.json';
     var regions = [['北京', 'bj'], ['天津', 'tj'], ['河北', 'heb'], ['山西', 'sx'], ['内蒙古', 'nm'], ['辽宁', 'ln'], ['吉林', 'jl'], ['黑龙江', 'hlj'], ['上海', 'sh'], ['江苏', 'js'], ['浙江', 'zj'], ['安徽', 'ah'], ['福建', 'fj'], ['江西', 'jx'], ['山东', 'sd'], ['河南', 'hen'], ['湖北', 'hub'], ['湖南', 'hun'], ['广东', 'gd'], ['广西', 'gx'], ['海南', 'hn'], ['重庆', 'cq'], ['四川', 'sc'], ['贵州', 'gz'], ['云南', 'yn'], ['西藏', 'xz'], ['陕西', 'sax'], ['甘肃', 'gs'], ['青海', 'qh'], ['宁夏', 'nx'], ['新疆', 'xj'], ['兵团', 'bt'],];
     var chartData = []; // {name: "新疆", value: 500}
-    var maxNum = 1000;
     var totalData = null;
     var lastDate = null;
     var currentDate = null;
@@ -57,16 +60,23 @@
         title: {
             text: '全国新冠肺炎疫情情况',
             subtext: '信息来自国家卫生健康委员会官方网站',
-            // sublink: 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml',
+            sublink: 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml',
             left: 'center',
             textStyle: {
                 color: '#fff'
             }
         },
         visualMap: {
+            type: 'piecewise',
+            pieces: [
+                {max: 0, label: '0'},
+                {min: 1, max: 9},
+                {min: 10, max: 99},
+                {min: 100, max: 999},
+                {min: 1000, max: 9999},
+                {min: 10000, label: '>= 10000'}
+            ],
             left: 'right',
-            min: 0,
-            max: maxNum,
             inRange: {
                 color: [
                     '#ffffff',
@@ -74,20 +84,21 @@
                     '#d71345'
                 ]
             },
-            calculable: true
         },
         tooltip: {
             trigger: 'item',
             showDelay: 0,
             transitionDuration: 0.2,
-            formatter: '{b}<br/>{c}人 (确诊 + 无症状)'
+            formatter: function (obj) {
+                return (`${obj.name}<br/>${obj.value}人 (确诊 + 无症状)`);
+            }
         },
         series: [
             {
                 name: '',
                 type: 'map',
                 map: 'china',  // 中国地图
-                roam: true, // 滚动缩放
+                roam: false, // 滚动缩放
                 itemStyle: {
                     areaColor: '#fff'  // 省份块的颜色
                 },
@@ -121,7 +132,6 @@
         const diffTime = Math.abs(endDate - startDate);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         $("#slider").slider({
-            orientation: "vertical",
             value: 0,
             min: -diffDays,
             max: 0,

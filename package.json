@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node ./server/main.js run $OVERRIDE",
     "daily": "node ./server/main.js daily $URL",
+    "address": "node ./server/main.js address $URL",
     "listwechat": "node ./server/main.js listwechat 5",
     "listwsj": "node ./server/main.js listwsj 5",
     "listnhc": "node ./server/main.js listnhc 5",
