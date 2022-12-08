@@ -37,7 +37,7 @@ async function main() {
             await run(arg0);
             break;
         case 'daily':
-            // arg0 = 'https://mp.weixin.qq.com/s/-Mrve9R04c6Q6l9T6aTMqw';
+            arg0 = 'https://mp.weixin.qq.com/s/anAKz01TPOsJr_oTxylTXw';
             await processDailyData(arg0);
             break;
         case 'address':
@@ -312,6 +312,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例无症状感染者在隔离管控中发现。
     新增本土新冠肺炎确诊病例3例和无症状感染者7例，其中7例确诊病例在隔离管控中发现。
     新增本土新冠肺炎确诊病例4例和无症状感染者5例，均在隔离管控中发现。
+    新增本土新冠肺炎确诊病例39例和无症状感染者327例。
     新增本土新冠肺炎确诊病例11例和无症状感染者119例，其中2例确诊病例和2例无症状感染者在社会面常态化核酸检测中发现，9例确诊病例和117例无症状感染者在隔离管控中发现。
     新增本土新冠肺炎确诊病例16例和无症状感染者128例，其中3例确诊病例和1例无症状感染者在社会面核酸检测中发现，13例确诊病例和127例无症状感染者在隔离管控中发现。
 
@@ -346,8 +347,8 @@ async function processDailyData(url, showRegions = true, reset = false) {
     var summaryResultData = [];
     if (summaryResult != null) {
         summaryResultData = [parseNum(summaryResult[1]), parseNum(summaryResult[2]), parseNum(summaryResult[3]), parseNum(summaryResult[4]), parseNum(summaryResult[5])];
-        if (summaryResult[6] && summaryResultData[3] === 0 && summaryResultData[4] === 0) {
-            // 有'均在隔离管控中发现'这句话，表示所有人都是隔离管控，也就意味着 confirm_bihuan = confirm, wzz_bihuan = wzz
+        if (summaryResultData[3] === 0 && summaryResultData[4] === 0) {
+            // 有'均在隔离管控中发现'这句话（12/7这句话没有了），表示所有人都是隔离管控，也就意味着 confirm_bihuan = confirm, wzz_bihuan = wzz
             summaryResultData[3] = summaryResultData[0];
             summaryResultData[4] = summaryResultData[1];
         }
