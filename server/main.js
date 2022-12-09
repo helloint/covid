@@ -521,7 +521,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
             // 在院治疗（需要计算）=昨天的数据+今天的确诊-今天的出院
             const currConfirm = parseInt(dailyData['daily']['curr_confirm'], 10);
             const cured = parseInt(result[1], 10);
-            totalResult = ["", currConfirm + summaryResultData[0] - cured, cured];
+            totalResult = ["", cured, currConfirm + summaryResultData[0] - cured];
         }
     }
     var totalResultData = [0, totalResult[1], totalResult[2], totalResult.length >= 4 && totalResult[3] ? totalResult[3] : 0, totalResult.length >= 5 && totalResult[4] ? totalResult[4] : 0];
