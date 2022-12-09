@@ -37,11 +37,11 @@ async function main() {
             await run(arg0);
             break;
         case 'daily':
-            arg0 = 'https://mp.weixin.qq.com/s/anAKz01TPOsJr_oTxylTXw';
+            // arg0 = 'https://mp.weixin.qq.com/s/CkRhicZw_2PR12Y8vonA2w';
             await processDailyData(arg0);
             break;
         case 'address':
-            arg0 = 'https://mp.weixin.qq.com/s/EH49z-wuXPbNqLrZzZQrqQ';
+            // arg0 = 'https://mp.weixin.qq.com/s/EH49z-wuXPbNqLrZzZQrqQ';
             await processAddressFromWechat(arg0);
             break;
         case 'addressmh':
@@ -293,6 +293,10 @@ async function processDailyData(url, showRegions = true, reset = false) {
     var regions = ['浦东新区', '黄浦区', '静安区', '徐汇区', '长宁区', '虹口区', '杨浦区', '普陀区', '闵行区', '宝山区', '嘉定区', '金山区', '松江区', '青浦区', '奉贤区', '崇明区'];
 
     var summary = $('#js_content section[data-id="106156"]').text().trim();
+    if (!summary) {
+        // 12月8日的数据，修改了模版，不再有原先的高亮section了。
+        summary = $('#js_content section[data-id="92620"]').text().trim();
+    }
     var dateRegex = /(\d{4})年(\d+)月(\d+)日/;
     var dateResult = summary.match(dateRegex);
     var dataDate = new Date(parseInt(dateResult[1], 10), parseInt(dateResult[2], 10) - 1, parseInt(dateResult[3], 10));
@@ -327,7 +331,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
         '(?:新冠肺炎确诊病例(\\d+)[例]?)?', // 1: confirm
         '(?:（其中\\d+例\\d+月\\d+日已通报）)?(?:（含\\d+例由无症状感染者转为确诊病例）)?',
         '(?:和)?',
-        '(?:无症状感染者(\\d+)例)?', // 2: wzz
+        '(?:(?:，新增本土)?无症状感染者(\\d+)例)?', // 2: wzz
         '(?:（其中\\d+例\\d+月\\d+日已通报）)?',
         '(?:，其中)?',
         '(?:\\d+例确诊病例)?',
@@ -497,6 +501,8 @@ async function processDailyData(url, showRegions = true, reset = false) {
     累计本土确诊24529例，治愈出院4675例，在院治疗19851例（其中重症16例），死亡3例。
     累计本土确诊6806例，治愈出院1116例，在院治疗5683例，死亡7例（2020年疫情初期发生）。
     累计本土确诊57717例，治愈出院54396例，在院治疗2736例（其中重型135例，危重型38例），现有待排查的疑似病例0例。
+
+    新增出院34例，其中本土27例，境外输入7例；新增解除医学观察无症状感染者270例，其中本土207例，境外输入63例。
      */
     var totalRegex = /治愈出院(\d+)例，在院治疗(\d+)例(?:（其中重(?:型|症)(\d+)例(?:，危重型(\d+)例)?）)?(?:，死亡\d+例)?(?:（2020年疫情初期发生）)?[，。]/;
     var totalResult = null;
@@ -506,6 +512,18 @@ async function processDailyData(url, showRegions = true, reset = false) {
             totalResult = content.match(totalRegex);
         }
     });
+    if (totalResult == null) {
+        var content = $('#js_content section[data-id="92620"]').text().trim();
+        var result = content.match(/新增出院(?:\d+)例，其中本土(\d+)例/);
+        if (result) {
+            const dailyFeed = `${dataFilePath}/daily.json`;
+            const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
+            // 在院治疗（需要计算）=昨天的数据+今天的确诊-今天的出院
+            const currConfirm = parseInt(dailyData['daily']['curr_confirm'], 10);
+            const cured = parseInt(result[1], 10);
+            totalResult = ["", currConfirm + summaryResultData[0] - cured, cured];
+        }
+    }
     var totalResultData = [0, totalResult[1], totalResult[2], totalResult.length >= 4 && totalResult[3] ? totalResult[3] : 0, totalResult.length >= 5 && totalResult[4] ? totalResult[4] : 0];
     // 累计治愈数据修正。4/14之前的数据，包含了历史疫情。
     if (dataDateDisplay < '2022-04-14') {
