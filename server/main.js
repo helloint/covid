@@ -516,12 +516,16 @@ async function processDailyData(url, showRegions = true, reset = false) {
         var content = $('#js_content section[data-id="92620"]').text().trim();
         var result = content.match(/新增出院(?:\d+)例，其中本土(\d+)例/);
         if (result) {
-            const dailyFeed = `${dataFilePath}/daily.json`;
-            const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
+            const theDayBeforeYesterday = new Date(now().getTime() - 1000 * 60 * 60 * 48);
+            const theDayBeforeYesterdayStr = parseDate(theDayBeforeYesterday);
+            const dailyTotalFeed = `${dataFilePath}/dailyTotalSlim.json`;
+            const dailyTotalData = JSON.parse(fs.readFileSync(dailyTotalFeed, 'utf8'));
             // 在院治疗（需要计算）=昨天的数据+今天的确诊-今天的出院
-            const currConfirm = parseInt(dailyData['daily']['curr_confirm'], 10);
+            const currConfirm = parseInt(dailyTotalData['daily'][theDayBeforeYesterdayStr]['curr_confirm'], 10);
+            const totalCured = parseInt(dailyTotalData['daily'][theDayBeforeYesterdayStr]['total_cured'], 10);
             const cured = parseInt(result[1], 10);
-            totalResult = ["", cured, currConfirm + summaryResultData[0] - cured];
+            totalResult = ["", totalCured + cured, currConfirm + summaryResultData[0] - cured];
+            curedResult = ["", cured];
         }
     }
     var totalResultData = [0, totalResult[1], totalResult[2], totalResult.length >= 4 && totalResult[3] ? totalResult[3] : 0, totalResult.length >= 5 && totalResult[4] ? totalResult[4] : 0];
@@ -533,7 +537,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     var deathResultData = [0, deathResult ? parseNum(deathResult[1]) : 0];
     if (curedResult == null) {
         // 没新增也没关系，靠累计计算。
-        curedResult = [0, 0];
+        curedResult = ["", 0];
     }
 
     var summaryData = [
