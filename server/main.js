@@ -37,7 +37,7 @@ async function main() {
             await run(arg0);
             break;
         case 'daily':
-            // arg0 = 'https://mp.weixin.qq.com/s/CkRhicZw_2PR12Y8vonA2w';
+            // arg0 = 'https://mp.weixin.qq.com/s/ruPnuU2Pq0x1BE9-UzXgHQ';
             await processDailyData(arg0);
             break;
         case 'address':
@@ -502,7 +502,8 @@ async function processDailyData(url, showRegions = true, reset = false) {
     累计本土确诊6806例，治愈出院1116例，在院治疗5683例，死亡7例（2020年疫情初期发生）。
     累计本土确诊57717例，治愈出院54396例，在院治疗2736例（其中重型135例，危重型38例），现有待排查的疑似病例0例。
 
-    新增出院34例，其中本土27例，境外输入7例；新增解除医学观察无症状感染者270例，其中本土207例，境外输入63例。
+    新增出院34例，其中本土27例，境外输入7例；
+    新增出院33例，均为本土病例；
      */
     var totalRegex = /治愈出院(\d+)例，在院治疗(\d+)例(?:（其中重(?:型|症)(\d+)例(?:，危重型(\d+)例)?）)?(?:，死亡\d+例)?(?:（2020年疫情初期发生）)?[，。]/;
     var totalResult = null;
@@ -515,6 +516,9 @@ async function processDailyData(url, showRegions = true, reset = false) {
     if (totalResult == null) {
         var content = $('#js_content section[data-id="92620"]').text().trim();
         var result = content.match(/新增出院(?:\d+)例，其中本土(\d+)例/);
+        if (!result) {
+            result = content.match(/新增出院(\d+)例，均为本土病例；/);
+        }
         if (result) {
             const theDayBeforeYesterday = new Date(now().getTime() - 1000 * 60 * 60 * 48);
             const theDayBeforeYesterdayStr = parseDate(theDayBeforeYesterday);
