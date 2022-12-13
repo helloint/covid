@@ -108,7 +108,9 @@ function now() {
 
 async function run(override) {
     override = override === 'true'; // original override is string type, 'true': 'false'
-    const yesterday = new Date(now().getTime() - 1000 * 60 * 60 * 24);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today.getTime() - 1000 * 60 * 60 * 24);
     const yesterdayStr = parseDate(yesterday);
 
     const dailyFeed = `${dataFilePath}/daily.json`;
@@ -139,11 +141,16 @@ async function run(override) {
                 let topic = null;
                 var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
                 if (override || dailyData.date !== yesterdayStr) {
+                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
                     topic = topics.find((item) => {
-                        const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
                         const res = item.title.match(regex);
                         if (res) {
                             return true;
+                        } else {
+                            // 12/11开始标题改为了"上海市新型冠状病毒肺炎疫情每日报告"
+                            if (topic.title === '上海市新型冠状病毒肺炎疫情每日报告' && new Date(topic.date) > today) {
+                                return true;
+                            }
                         }
                     });
                     if (topic) {
