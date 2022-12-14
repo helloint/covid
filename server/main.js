@@ -136,52 +136,56 @@ async function run(override) {
     ) {
         console.log('Processing wechat data...');
         if (config.token) {
-            var topics = await getLatestTopicsFromWeChat();
-            if (topics) {
-                let topic = null;
-                var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
-                if (override || dailyData.date !== yesterdayStr) {
-                    const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
-                    topic = topics.find((item) => {
-                        const res = item.title.match(regex);
-                        if (res) {
-                            return true;
+            try {
+                var topics = await getLatestTopicsFromWeChat();
+                if (topics) {
+                    let topic = null;
+                    var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
+                    if (override || dailyData.date !== yesterdayStr) {
+                        const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
+                        topic = topics.find((item) => {
+                            const res = item.title.match(regex);
+                            if (res) {
+                                return true;
+                            } else {
+                                // 12/11开始标题改为了"上海市新型冠状病毒肺炎疫情每日报告"
+                                if (item.title === '上海市新型冠状病毒肺炎疫情每日报告' && new Date(item.title) > today) {
+                                    return true;
+                                }
+                            }
+                        });
+                        if (topic) {
+                            await processDailyData(topic.url);
+                            console.log('Wechat data done.');
+                            sendNotify('covid_daily_done');
                         } else {
-                            // 12/11开始标题改为了"上海市新型冠状病毒肺炎疫情每日报告"
-                            if (topic.title === '上海市新型冠状病毒肺炎疫情每日报告' && new Date(topic.date) > today) {
+                            console.log('Wechat topic not ready.');
+                        }
+                    }
+
+                    if (override || addressData.date !== yesterdayStr) {
+                        topic = topics.find((item) => {
+                            // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
+                            // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
+                            const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
+                            const res = item.title.match(regex);
+                            if (res) {
                                 return true;
                             }
+                        });
+                        if (topic) {
+                            console.log('processing address data...');
+                            await processAddressFromWechat(topic.url);
+                            sendNotify('covid_address_done');
+                        } else {
+                            console.log('Address topic not ready.');
                         }
-                    });
-                    if (topic) {
-                        await processDailyData(topic.url);
-                        console.log('Wechat data done.');
-                        sendNotify('covid_daily_done');
-                    } else {
-                        console.log('Wechat topic not ready.');
                     }
+                } else {
+                    console.log('No wechat topics.');
                 }
-
-                if (override || addressData.date !== yesterdayStr) {
-                    topic = topics.find((item) => {
-                        // 5月10日（0-24时）本市各区确诊病例、无症状感染者居住地信息
-                        // 6月16日（0-24时）本市各区确诊病例、无症状感染者居住地和当前全市风险地区信息
-                        const regex = new RegExp(yesterdayLocalStr + '（0-24时）本市各区确诊病例、无症状感染者居住地');
-                        const res = item.title.match(regex);
-                        if (res) {
-                            return true;
-                        }
-                    });
-                    if (topic) {
-                        console.log('processing address data...');
-                        await processAddressFromWechat(topic.url);
-                        sendNotify('covid_address_done');
-                    } else {
-                        console.log('Address topic not ready.');
-                    }
-                }
-            } else {
-                console.log('No wechat topics.');
+            } catch (e) {
+                sendNotify('daily_run_error');
             }
         } else {
             console.log('Wechat token not set, skipped.');
@@ -191,19 +195,23 @@ async function run(override) {
     // nhc
     if (override || Object.keys(nhcData)[0] !== yesterdayStr) {
         console.log('Processing nhc data...');
-        var nhcTopics = await getTopicsFromNhc(1);
-        if (nhcTopics && nhcTopics.length > 0) {
-            if (nhcTopics[0][0] === yesterdayStr) {
-                const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
-                if (result) {
-                    console.log('Nhc data done.');
-                    sendNotify('nhc_daily_done');
+        try {
+            var nhcTopics = await getTopicsFromNhc(1);
+            if (nhcTopics && nhcTopics.length > 0) {
+                if (nhcTopics[0][0] === yesterdayStr) {
+                    const result = await processNhcDaily(nhcTopics[0][0], nhcTopics[0][1]);
+                    if (result) {
+                        console.log('Nhc data done.');
+                        sendNotify('nhc_daily_done');
+                    }
+                } else {
+                    console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
                 }
             } else {
-                console.log(`Nhc topic not ready. last one is: ${nhcTopics[0][0]}`);
+                console.log('No nhc Topics.');
             }
-        } else {
-            console.log('No nhc Topics.');
+        } catch (e) {
+            sendNotify('daily_run_error');
         }
     }
 }
