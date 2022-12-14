@@ -37,7 +37,7 @@ async function main() {
             await run(arg0);
             break;
         case 'daily':
-            // arg0 = 'https://mp.weixin.qq.com/s/ruPnuU2Pq0x1BE9-UzXgHQ';
+            arg0 = 'https://mp.weixin.qq.com/s/wTKnZOpuDTK16B9jycZ1rA';
             await processDailyData(arg0);
             break;
         case 'address':
@@ -138,7 +138,7 @@ async function run(override) {
         if (config.token) {
             try {
                 var topics = await getLatestTopicsFromWeChat();
-                if (topics) {
+                if (topics && topics.length > 0) {
                     let topic = null;
                     var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
                     if (override || dailyData.date !== yesterdayStr) {
@@ -149,7 +149,7 @@ async function run(override) {
                                 return true;
                             } else {
                                 // 12/11开始标题改为了"上海市新型冠状病毒肺炎疫情每日报告"
-                                if (item.title === '上海市新型冠状病毒肺炎疫情每日报告' && new Date(item.title) > today) {
+                                if (item.title === '上海市新型冠状病毒肺炎疫情每日报告' && new Date(item.date) > today) {
                                     return true;
                                 }
                             }
