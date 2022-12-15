@@ -37,7 +37,7 @@ async function main() {
             await run(arg0);
             break;
         case 'daily':
-            arg0 = 'https://mp.weixin.qq.com/s/wTKnZOpuDTK16B9jycZ1rA';
+            // arg0 = 'https://mp.weixin.qq.com/s/rUtW8X1cngonrhSp1O-h4A';
             await processDailyData(arg0);
             break;
         case 'address':
@@ -103,6 +103,7 @@ async function processAddressHistory() {
  * @returns {Date}
  */
 function now() {
+    // return new Date('2022-12-14');
     return new Date(new Date().getTime() + (480 + new Date().getTimezoneOffset()) * 60 * 1000)
 }
 
@@ -334,6 +335,8 @@ async function processDailyData(url, showRegions = true, reset = false) {
     新增本土新冠肺炎确诊病例39例和无症状感染者327例。
     新增本土新冠肺炎确诊病例11例和无症状感染者119例，其中2例确诊病例和2例无症状感染者在社会面常态化核酸检测中发现，9例确诊病例和117例无症状感染者在隔离管控中发现。
     新增本土新冠肺炎确诊病例16例和无症状感染者128例，其中3例确诊病例和1例无症状感染者在社会面核酸检测中发现，13例确诊病例和127例无症状感染者在隔离管控中发现。
+    新增本土新冠肺炎确诊病例16例，新增本土无症状感染者117例。
+    新增本土新冠肺炎确诊病例22例，均为轻型。
 
     Template 2:
     新增本土新冠肺炎确诊病例1292（含既往无症状感染者转为确诊病例858例）和无症状感染者9330例，432例确诊病例和9140例无症状感染者在隔离管控中发现，其余在相关风险人群排查中发现。
@@ -344,6 +347,7 @@ async function processDailyData(url, showRegions = true, reset = false) {
     var summaryRegex = new RegExp([
         '新增本土',
         '(?:新冠肺炎确诊病例(\\d+)[例]?)?', // 1: confirm
+        '(?:，均为轻型)?',
         '(?:（其中\\d+例\\d+月\\d+日已通报）)?(?:（含\\d+例由无症状感染者转为确诊病例）)?',
         '(?:和)?',
         '(?:(?:，新增本土)?无症状感染者(\\d+)例)?', // 2: wzz
