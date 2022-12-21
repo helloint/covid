@@ -123,8 +123,8 @@ async function run(override) {
 
     console.log('Processing daily data...');
     if (!override
-        && dailyData.date === yesterdayStr
-        && addressData.date === yesterdayStr
+        // && dailyData.date === yesterdayStr
+        // && addressData.date === yesterdayStr
         && Object.keys(nhcData)[0] === yesterdayStr
     ) {
         console.log('Today data already generated. Quit!');
@@ -132,8 +132,8 @@ async function run(override) {
     }
 
     if (override
-        || dailyData.date !== yesterdayStr
-        || addressData.date !== yesterdayStr
+        // || dailyData.date !== yesterdayStr
+        // || addressData.date !== yesterdayStr
     ) {
         console.log('Processing wechat data...');
         if (config.token) {
