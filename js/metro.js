@@ -29,8 +29,7 @@ function renderCalendar(data) {
             max: 1500,
             type: 'piecewise',
             orient: 'horizontal',
-            left: 50,
-            // right: 0,
+            left: 'center',
             inRange: {
                 color: ['#5291FF', 'red']
             },
