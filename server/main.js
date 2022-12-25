@@ -36,6 +36,10 @@ async function main() {
         case 'run' :
             await run(arg0);
             break;
+        case 'shmetro':
+            // arg0 = new Date('2022-12-24');
+            await processMetroData(arg0);
+            break;
         case 'daily':
             // arg0 = 'https://mp.weixin.qq.com/s/rUtW8X1cngonrhSp1O-h4A';
             await processDailyData(arg0);
@@ -81,6 +85,36 @@ async function main() {
     }
 }
 
+async function processMetroData(date) {
+    let ret = -1;
+    const url = config.metroWeibo;
+    const dateStr = parseDate(date);
+    const dateLocalStr = [(date.getMonth() + 1), '月', date.getDate(), '日'].join('');
+    const response = await axios.get(url);
+    if (response.status === 200) {
+        const jsonData = response.data;
+        // console.log(jsonData);
+        // pattern:【地铁网络客流】12月24日上海地铁总客流为180.0万人次。
+        const regex = new RegExp('【地铁网络客流】' + dateLocalStr + '上海地铁总客流为([\\d\\.]+)万人次。');
+        jsonData.data.cards.forEach(card => {
+            // console.log(card.mblog.text);
+            const result = card.mblog.text.match(regex);
+            if (result) {
+                const metroFeed = `${dataFilePath}/shmetro.json`;
+                const metroData = JSON.parse(fs.readFileSync(metroFeed, 'utf8'));
+                metroData.push([dateStr, parseFloat(result[1].toString())]);
+                fs.writeFileSync(metroFeed, JSON.stringify(metroData), 'utf8');
+
+                ret = 1;
+            }
+        });
+    } else {
+        console.log(`http status: ${response.status}`);
+    }
+
+    return ret;
+}
+
 async function processHistory() {
     for (const link of config.links) {
         await processDailyData(link[1], false, true);
@@ -113,6 +147,7 @@ async function run(override) {
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today.getTime() - 1000 * 60 * 60 * 24);
     const yesterdayStr = parseDate(yesterday);
+    const yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
 
     const dailyFeed = `${dataFilePath}/daily.json`;
     const dailyData = JSON.parse(fs.readFileSync(dailyFeed, 'utf8'));
@@ -120,12 +155,15 @@ async function run(override) {
     const addressData = JSON.parse(fs.readFileSync(addressFeed, 'utf8'));
     const nhcFeed = `${dataFilePath}/nhcTotal.json`;
     const nhcData = JSON.parse(fs.readFileSync(nhcFeed, 'utf8'));
+    const metroFeed = `${dataFilePath}/shmetro.json`;
+    const metroData = JSON.parse(fs.readFileSync(metroFeed, 'utf8'));
 
     console.log('Processing daily data...');
     if (!override
         // && dailyData.date === yesterdayStr
         // && addressData.date === yesterdayStr
         && Object.keys(nhcData)[0] === yesterdayStr
+        && Object.keys(metroData)[0][0] === yesterdayStr
     ) {
         console.log('Today data already generated. Quit!');
         return;
@@ -141,7 +179,6 @@ async function run(override) {
                 var topics = await getLatestTopicsFromWeChat();
                 if (topics && topics.length > 0) {
                     let topic = null;
-                    var yesterdayLocalStr = [(yesterday.getMonth() + 1), '月', yesterday.getDate(), '日'].join('');
                     if (override || dailyData.date !== yesterdayStr) {
                         const regex = new RegExp(yesterdayLocalStr + '（0-24时）上海(?:无)?新增本土(?:新冠肺炎)?确诊病例');
                         topic = topics.find((item) => {
@@ -210,6 +247,24 @@ async function run(override) {
                 }
             } else {
                 console.log('No nhc Topics.');
+            }
+        } catch (e) {
+            sendNotify('daily_run_error');
+        }
+    }
+
+    // shmetro
+    if (override || Object.keys(metroData)[0][0] !== yesterdayStr) {
+        console.log('Processing shmetro data...');
+        try {
+            const result = await processMetroData(yesterday);
+            if (result === 1) {
+                console.log('Metro data done.');
+                sendNotify('metro_daily_done');
+            } else if (result === 0) {
+                console.log(`Metro data not ready.`);
+            } else {
+                console.log('No Metro Topics.');
             }
         } catch (e) {
             sendNotify('daily_run_error');
