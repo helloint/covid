@@ -143,7 +143,7 @@ function now() {
 
 async function run(override) {
     override = override === 'true'; // original override is string type, 'true': 'false'
-    const today = new Date();
+    const today = now();
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today.getTime() - 1000 * 60 * 60 * 24);
     const yesterdayStr = parseDate(yesterday);
@@ -163,7 +163,7 @@ async function run(override) {
         // && dailyData.date === yesterdayStr
         // && addressData.date === yesterdayStr
         && Object.keys(nhcData)[0] === yesterdayStr
-        && Object.keys(metroData)[0][0] === yesterdayStr
+        && metroData[metroData.length - 1][0] === yesterdayStr
     ) {
         console.log('Today data already generated. Quit!');
         return;
@@ -254,7 +254,7 @@ async function run(override) {
     }
 
     // shmetro
-    if (override || Object.keys(metroData)[0][0] !== yesterdayStr) {
+    if (override || metroData[metroData.length - 1][0] !== yesterdayStr) {
         console.log('Processing shmetro data...');
         try {
             const result = await processMetroData(yesterday);
@@ -270,6 +270,7 @@ async function run(override) {
             sendNotify('daily_run_error');
         }
     }
+    console.log('Process Quit.');
 }
 
 /**
