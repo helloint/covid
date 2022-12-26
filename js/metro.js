@@ -13,8 +13,13 @@ function renderUI() {
 
 function renderCalendar(data) {
     const calendarData = [];
+    const dayOfWeek = (new Date(data[data.length - 1][0])).getDay();
+    const totalDisplayDay = 28 + (dayOfWeek ? dayOfWeek : 7);
     data.forEach(([date, num]) => {
         calendarData.push([date, num]);
+        if (calendarData.length > totalDisplayDay) {
+            calendarData.shift();
+        }
     });
     const option = {
         title: {
