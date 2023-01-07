@@ -8,7 +8,10 @@ function init() {
 function renderUI() {
     fetch(dataUrl).then(function (response) {
         return response.json()
-    }).then(jsonData => renderCalendar(jsonData));
+    }).then(jsonData => {
+        renderCalendar(jsonData);
+        renderHistory(jsonData);
+    });
 }
 
 function renderCalendar(data) {
@@ -93,5 +96,73 @@ function renderCalendar(data) {
         },
     };
     const chart = echarts.init(document.getElementById('calendar'), 'dark', {devicePixelRatio: scale});
+    chart.setOption(option);
+}
+
+function renderHistory(data) {
+    const option = {
+        title: {
+            text: '历史数据',
+            left: 'center',
+        },
+        tooltip: {
+            trigger: 'axis',
+        },
+        grid: {
+            left: '8%',
+            right: '3%',
+            bottom: '16%',
+        },
+        xAxis: {},
+        yAxis: {},
+        toolbox: {
+            right: 10,
+            feature: {
+                dataZoom: {
+                    yAxisIndex: 'none',
+                },
+                restore: {},
+                saveAsImage: {
+                    type: 'png',
+                },
+            },
+        },
+        dataZoom: [
+            {
+                startValue: '2020-03-09',
+            },
+            {
+                type: 'inside',
+            },
+        ],
+        visualMap: {
+            min: 0,
+            max: 1500,
+            type: 'piecewise',
+            inRange: {
+                color: ['#5291FF', 'red']
+            },
+            top: 50,
+            right: 0,
+            show: false,
+        },
+        series: {
+            name: '万人次',
+            type: 'line',
+            markPoint: {
+                data: [
+                    { type: 'max', name: 'Max' },
+                    { type: 'min', name: 'Min' }
+                ]
+            },
+        },
+    };
+    option.xAxis.data = data.map(function (item) {
+        return item[0];
+    });
+    option.series.data = data.map(function (item) {
+        return item[1];
+    });
+    const chart = echarts.init(document.getElementById('history'), 'dark', {devicePixelRatio: scale});
     chart.setOption(option);
 }

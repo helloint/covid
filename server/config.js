@@ -2,7 +2,7 @@ var config = {};
 config.fakeid = 'MjM5NTA5NzYyMA==';
 config.token = '';
 config.cookie = '';
-config.metroWeibo = 'https://m.weibo.cn/api/container/getIndex?type=uid&value=1742987497&containerid=1076031742987497';
+config.metroWeibo = 'https://m.weibo.cn/api/container/getIndex?type=uid&value=1742987497&containerid=1076031742987497&since_id=';
 config.key = '';
 config.links = [
     // ['2022-02-26','https://mp.weixin.qq.com/s/jpToJCcWCPWnCHvH8jOY2w'],

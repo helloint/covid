@@ -40,6 +40,9 @@ async function main() {
             // arg0 = new Date('2022-12-24');
             await processMetroData(arg0);
             break;
+        case 'shmetrohistory':
+            await processMetroHistory(arg0);
+            break;
         case 'daily':
             // arg0 = 'https://mp.weixin.qq.com/s/rUtW8X1cngonrhSp1O-h4A';
             await processDailyData(arg0);
@@ -113,6 +116,68 @@ async function processMetroData(date) {
     }
 
     return ret;
+}
+
+async function processMetroHistory(total, sId) {
+    let ret = [];
+    let sinceId = sId;
+    do {
+        try {
+            const url = config.metroWeibo + (sinceId ? sinceId : '');
+            const response = await axios.get(url);
+            if (response.status === 200) {
+                const jsonData = response.data;
+                // console.log(jsonData);
+                if (jsonData.ok === 1) {
+                    sinceId = jsonData.data.cardlistInfo.since_id;
+                    console.log(`since_id: ${sinceId}`);
+                    // pattern:【地铁网络客流】12月24日上海地铁总客流为180.0万人次。
+                    const regex = new RegExp('【地铁网络客流】(\\d+)月(\\d+)日上海地铁总客流为([\\d\\.]+)万人次。');
+                    jsonData.data.cards.forEach(card => {
+                        // console.log(card.mblog.text);
+                        const result = card.mblog.text.match(regex);
+                        if (result) {
+                            const createdAt = new Date(card.mblog.created_at);
+                            const year = createdAt.getFullYear() - (createdAt.getMonth() === 11 && createdAt.getDate() === 31 ? 1 : 0);
+                            ret.push([[
+                                year,
+                                result[1].length === 1 ? '0' + result[1] : result[1],
+                                result[2].length === 1 ? '0' + result[2] : result[2],
+                            ].join('-'), parseFloat(result[3].toString())]);
+                        }
+                    });
+                } else {
+                    console.log(`error, msg: ${jsonData.msg}`);
+                    throw new Error(jsonData.msg);
+                }
+            } else {
+                console.log(`error, http status: ${response.status}`);
+                throw new Error(response.status);
+            }
+        } catch (e) {
+            console.log(e.code);
+
+            console.log(`Continue in 5s...`);
+            setTimeout(() => {
+                processMetroHistory(total, sinceId);
+            }, 5000);
+
+            break;
+        }
+        ret.length > 0 && console.log(`current: ${ret[ret.length - 1][0]}`);
+
+    } while (ret.length < total)
+
+    // console.log(JSON.stringify(ret));
+    const metroFeed = `${dataFilePath}/shmetro.json`;
+    const metroData = JSON.parse(fs.readFileSync(metroFeed, 'utf8'));
+    ret.forEach(item => {
+        const exist = metroData.filter(data => data[0] === item[0]).length > 0;
+        if (!exist) {
+            metroData.unshift(item);
+        }
+    });
+    fs.writeFileSync(metroFeed, JSON.stringify(metroData), 'utf8');
 }
 
 async function processHistory() {
@@ -851,6 +916,9 @@ async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00', e
  * 从国家卫生健康委员会网站获取疫情数据文章列表
  * http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml
  * http://www.nhc.gov.cn/xcs/yqtb/list_gzbd_2.shtml
+ *
+ * 12/24起数据转到cdc了 TODO
+ * https://www.chinacdc.cn/jkzt/crb/zl/szkb_11803/jszl_11809/
  *
  * @param total
  * @param startDate
