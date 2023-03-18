@@ -227,7 +227,7 @@ async function run(override) {
     if (!override
         // && dailyData.date === yesterdayStr
         // && addressData.date === yesterdayStr
-        && Object.keys(nhcData)[0] === yesterdayStr
+        // && Object.keys(nhcData)[0] === yesterdayStr
         && metroData[metroData.length - 1][0] === yesterdayStr
     ) {
         console.log('Today data already generated. Quit!');
@@ -296,7 +296,9 @@ async function run(override) {
     }
 
     // nhc
-    if (override || Object.keys(nhcData)[0] !== yesterdayStr) {
+    if (override
+        // || Object.keys(nhcData)[0] !== yesterdayStr
+    ) {
         console.log('Processing nhc data...');
         try {
             var nhcTopics = await getTopicsFromNhc(1);
@@ -319,7 +321,9 @@ async function run(override) {
     }
 
     // shmetro
-    if (override || metroData[metroData.length - 1][0] !== yesterdayStr) {
+    if (override
+        || metroData[metroData.length - 1][0] !== yesterdayStr
+    ) {
         console.log('Processing shmetro data...');
         try {
             const result = await processMetroData(yesterday);
