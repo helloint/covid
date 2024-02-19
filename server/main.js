@@ -20,7 +20,7 @@ const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
 const config = require('./config.js');
 const axios = require("axios");
-const createBrowser = require('browserless');
+// const createBrowser = require('browserless');
 const dataFilePath = `${__dirname}/../data`;
 
 if (!config.token) {
@@ -78,11 +78,11 @@ async function main() {
         case 'nhchistory':
             await processNhcHistory();
             break;
-        case 'fetch':
-            const browser = createBrowser();
-            await fetchProtectedUrl(browser, 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml');
-            await browser.close();
-            break;
+        // case 'fetch':
+        //     const browser = createBrowser();
+        //     await fetchProtectedUrl(browser, 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml');
+        //     await browser.close();
+        //     break;
         default:
             console.log('No match type.');
     }
@@ -929,87 +929,87 @@ async function getTopicsFromWsj(total = 10, startDate = '2022-02-26 00:00:00', e
  * @param enableLog
  * @returns {Promise<*[]>}
  */
-async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', enableLog = false) {
-    const browser = createBrowser();
-    const getTopics = async (total, fromDate) => {
-        const getPageUrl = (pageNum) => {
-            return `http://www.nhc.gov.cn/xcs/yqtb/list_gzbd${pageNum === 0 ? '' : `_${pageNum + 1}`}.shtml`;
-        }
-
-        /**
-         * 过滤出疫情数据文章
-         * @param url
-         * @param fromDate
-         * @returns {Promise<{result: *[], exceeded: boolean}>}
-         */
-        const filterMatchedTopics = async (url, fromDate) => {
-            const html = await fetchProtectedUrl(browser, url);
-            const dom = new JSDOM(html);
-            const {window} = dom;
-            const ret = [];
-            const titleRegex = /截至(\d+)月(\d+)日24时新型冠状病毒肺炎疫情最新情况/;
-            const titleDateRegex = /(\d+)-(\d+)-(\d+)/;
-
-            const $ = jQuery = require('jquery')(window);
-            let exceeded = false;
-            const topicNum = $('ul.zxxx_list li').length;
-            if (topicNum === 0) {
-                console.log(html);
-            }
-            console.log('Nhc Topic length:' + topicNum);
-            $('ul.zxxx_list li').each((index, item) => {
-                const title = $(item).find('a').text().trim();
-                const titleDate = $(item).find('span.ml').text().trim();
-                const titleResult = title.match(titleRegex);
-                const titleDateResult = titleDate.match(titleDateRegex);
-                if (titleResult && titleDateResult) {
-                    const path = completeUrl($(item).find('a').attr('href'), url);
-                    const summaryDate = new Date(titleDateResult[1], titleDateResult[2] - 1, titleDateResult[3]);
-                    summaryDate.setDate(summaryDate.getDate() - 1);
-                    const dateStr = `${summaryDate.getFullYear()}-${(summaryDate.getMonth() + 1) < 10 ? '0' : ''}${summaryDate.getMonth() + 1}-${summaryDate.getDate() < 10 ? '0' : ''}${summaryDate.getDate()}`;
-                    ret.push([dateStr, path, title]);
-
-                    if (fromDate) {
-                        const itemDate = new Date(titleDate).getTime();
-                        if (itemDate <= fromDate) {
-                            exceeded = true;
-                            return false;
-                        }
-                    }
-                }
-            });
-
-            return {
-                result: ret, exceeded
-            };
-        }
-
-        const ret = [];
-        let pageNum = 0;
-        enableLog && console.log(`total: ${total}`);
-        let dateExceeded = false;
-        while (!dateExceeded && ret.length <= total) {
-            let url = getPageUrl(pageNum);
-            const {result, exceeded} = await filterMatchedTopics(url, fromDate);
-            ret.push(...result);
-            pageNum++;
-            enableLog && console.log(`count: ${ret.length}`);
-            if (exceeded) {
-                dateExceeded = true;
-            }
-        }
-        return ret;
-    }
-
-    const fromDate = startDate ? new Date(startDate).getTime() : null;
-    const result = await getTopics(total, fromDate);
-    enableLog && result.forEach((item) => {
-        console.log(`[${item[0]}]${item[2]} ${item[1]}`);
-    });
-
-    await browser.close();
-    return result;
-}
+// async function getTopicsFromNhc(total = 5, startDate = '2021-12-31 00:00:00', enableLog = false) {
+//     const browser = createBrowser();
+//     const getTopics = async (total, fromDate) => {
+//         const getPageUrl = (pageNum) => {
+//             return `http://www.nhc.gov.cn/xcs/yqtb/list_gzbd${pageNum === 0 ? '' : `_${pageNum + 1}`}.shtml`;
+//         }
+//
+//         /**
+//          * 过滤出疫情数据文章
+//          * @param url
+//          * @param fromDate
+//          * @returns {Promise<{result: *[], exceeded: boolean}>}
+//          */
+//         const filterMatchedTopics = async (url, fromDate) => {
+//             const html = await fetchProtectedUrl(browser, url);
+//             const dom = new JSDOM(html);
+//             const {window} = dom;
+//             const ret = [];
+//             const titleRegex = /截至(\d+)月(\d+)日24时新型冠状病毒肺炎疫情最新情况/;
+//             const titleDateRegex = /(\d+)-(\d+)-(\d+)/;
+//
+//             const $ = jQuery = require('jquery')(window);
+//             let exceeded = false;
+//             const topicNum = $('ul.zxxx_list li').length;
+//             if (topicNum === 0) {
+//                 console.log(html);
+//             }
+//             console.log('Nhc Topic length:' + topicNum);
+//             $('ul.zxxx_list li').each((index, item) => {
+//                 const title = $(item).find('a').text().trim();
+//                 const titleDate = $(item).find('span.ml').text().trim();
+//                 const titleResult = title.match(titleRegex);
+//                 const titleDateResult = titleDate.match(titleDateRegex);
+//                 if (titleResult && titleDateResult) {
+//                     const path = completeUrl($(item).find('a').attr('href'), url);
+//                     const summaryDate = new Date(titleDateResult[1], titleDateResult[2] - 1, titleDateResult[3]);
+//                     summaryDate.setDate(summaryDate.getDate() - 1);
+//                     const dateStr = `${summaryDate.getFullYear()}-${(summaryDate.getMonth() + 1) < 10 ? '0' : ''}${summaryDate.getMonth() + 1}-${summaryDate.getDate() < 10 ? '0' : ''}${summaryDate.getDate()}`;
+//                     ret.push([dateStr, path, title]);
+//
+//                     if (fromDate) {
+//                         const itemDate = new Date(titleDate).getTime();
+//                         if (itemDate <= fromDate) {
+//                             exceeded = true;
+//                             return false;
+//                         }
+//                     }
+//                 }
+//             });
+//
+//             return {
+//                 result: ret, exceeded
+//             };
+//         }
+//
+//         const ret = [];
+//         let pageNum = 0;
+//         enableLog && console.log(`total: ${total}`);
+//         let dateExceeded = false;
+//         while (!dateExceeded && ret.length <= total) {
+//             let url = getPageUrl(pageNum);
+//             const {result, exceeded} = await filterMatchedTopics(url, fromDate);
+//             ret.push(...result);
+//             pageNum++;
+//             enableLog && console.log(`count: ${ret.length}`);
+//             if (exceeded) {
+//                 dateExceeded = true;
+//             }
+//         }
+//         return ret;
+//     }
+//
+//     const fromDate = startDate ? new Date(startDate).getTime() : null;
+//     const result = await getTopics(total, fromDate);
+//     enableLog && result.forEach((item) => {
+//         console.log(`[${item[0]}]${item[2]} ${item[1]}`);
+//     });
+//
+//     await browser.close();
+//     return result;
+// }
 
 async function fetchProtectedUrl(browser, url) {
     const browserless = await browser.createContext({retry: 0});
@@ -1031,51 +1031,51 @@ async function fetchProtectedUrl(browser, url) {
     return html;
 }
 
-async function processNhcDaily(date, url) {
-    const feed = `${dataFilePath}/nhcTotal.json`;
-    const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
-    const browser = createBrowser();
-    const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
-    await browser.close();
-    if (result) {
-        const newData = {};
-        newData[date] = result;
-        console.log(date, result);
-        Object.keys(totalData).forEach(date => {
-            newData[date] = totalData[date];
-        });
-        fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
-        return true;
-    } else {
-        console.log(`process failed, result: ${result}`);
-        return false;
-    }
-}
+// async function processNhcDaily(date, url) {
+//     const feed = `${dataFilePath}/nhcTotal.json`;
+//     const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
+//     const browser = createBrowser();
+//     const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
+//     await browser.close();
+//     if (result) {
+//         const newData = {};
+//         newData[date] = result;
+//         console.log(date, result);
+//         Object.keys(totalData).forEach(date => {
+//             newData[date] = totalData[date];
+//         });
+//         fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
+//         return true;
+//     } else {
+//         console.log(`process failed, result: ${result}`);
+//         return false;
+//     }
+// }
 
-async function processNhcHistory() {
-    const browser = createBrowser();
-    const feed = `${dataFilePath}/nhcTotal.json`;
-    const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
-    const empties = [];
-    const newData = {};
-    for (const [date, url] of config.nhclinks) {
-        // 只处理未处理过的日期
-        if (!totalData[date]) {
-            const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
-            if (result) {
-                newData[date] = result;
-                console.log(date, result);
-            } else {
-                empties.push(date);
-            }
-        } else {
-            newData[date] = totalData[date];
-        }
-    }
-    console.log(`empties: ${empties}`);
-    fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
-    await browser.close();
-}
+// async function processNhcHistory() {
+//     const browser = createBrowser();
+//     const feed = `${dataFilePath}/nhcTotal.json`;
+//     const totalData = JSON.parse(fs.readFileSync(feed, 'utf8'));
+//     const empties = [];
+//     const newData = {};
+//     for (const [date, url] of config.nhclinks) {
+//         // 只处理未处理过的日期
+//         if (!totalData[date]) {
+//             const result = processNhcData(extractNhcSummary(await fetchProtectedUrl(browser, url)));
+//             if (result) {
+//                 newData[date] = result;
+//                 console.log(date, result);
+//             } else {
+//                 empties.push(date);
+//             }
+//         } else {
+//             newData[date] = totalData[date];
+//         }
+//     }
+//     console.log(`empties: ${empties}`);
+//     fs.writeFileSync(feed, JSON.stringify(newData), 'utf8');
+//     await browser.close();
+// }
 
 function extractNhcSummary(html) {
     const dom = new JSDOM(html);
