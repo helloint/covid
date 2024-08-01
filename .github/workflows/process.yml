@@ -43,8 +43,8 @@ jobs:
 
       - name: Push data
         run: |
-          git config --global user.name 'Wayne Mao'
-          git config --global user.email 'helloint@qq.com'
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git add ./data/*
           set +e
           git status | grep modified
